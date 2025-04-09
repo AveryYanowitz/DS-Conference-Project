@@ -2,7 +2,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Scanner;
 
-public class Summarizer {
+public class Tagger {
     @SuppressWarnings("resource")
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -20,18 +20,11 @@ public class Summarizer {
         _tagSentence(wordsWithTags, followingTags);
         System.out.println("Thanks for stopping by!");
     }
-
-    @SuppressWarnings("resource")
-    public static String getString(String prompt) {
-        Scanner reader = new Scanner(System.in);
-        System.out.print(prompt);
-        return reader.nextLine();
-    }
     
     private static void _tagSentence(Map<String, Set<String>> wordsWithTags, Map<String, Set<String>> followingTags) {
         do {        
             System.out.println();
-            String words = getString("Enter a sentence to tag: ");
+            String words = _getString("Enter a sentence to tag: ");
             // Remove apostrophes and punctuation to match Word objects
             StringBuilder sb = new StringBuilder();
             for (char ch : words.toCharArray()) {
@@ -50,7 +43,30 @@ public class Summarizer {
                     System.out.println(word + " - no entries found");
                 }
             }
-        } while (getString("Add another sentence? (Y/N) ").toLowerCase().equals("y"));
+        } while (_getYN("Add another sentence?"));
+    }
+
+    @SuppressWarnings("resource")
+    private static String _getString(String prompt) {
+        Scanner reader = new Scanner(System.in);
+        System.out.print(prompt);
+        return reader.nextLine();
+    }
+
+    @SuppressWarnings("resource")
+    private static boolean _getYN(String prompt) {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.print(prompt+" (Y/N) ");
+            String s = scanner.next();
+            if (s.toLowerCase().equals("y") || s.toLowerCase().equals("yes")) {
+                return true;
+            }
+            if (s.toLowerCase().equals("n") || s.toLowerCase().equals("no")) {
+                return false;
+            }
+            System.out.println("Didn't understand, please try again.");
+        }
     }
 
 }
