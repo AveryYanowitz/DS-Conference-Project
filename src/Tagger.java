@@ -1,5 +1,8 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.Scanner;
 
 public class Tagger {
@@ -16,12 +19,6 @@ public class Tagger {
         Map<String, Set<String>> wordsWithTags = MapTools.extractTags(wordsWithFreqs);
         // Map<Integer, Set<Word>> freqsWithWords = MapTools.invertMap(wordsWithFreqs);
         // Map<Integer, Set<Word>> roundedFreqs = MapTools.roundMap(freqsWithWords);
-        
-        _tagSentence(wordsWithTags, followingTags);
-        System.out.println("Thanks for stopping by!");
-    }
-    
-    private static void _tagSentence(Map<String, Set<String>> wordsWithTags, Map<String, Set<String>> followingTags) {
         do {        
             System.out.println();
             String words = _getString("Enter a sentence to tag: ");
@@ -34,16 +31,64 @@ public class Tagger {
             }
             
             String[] wordList = sb.toString().split(" ");
+            Set<List<String>> timelines = new TreeSet<>((x, y) -> x.get(x.size() - 1).compareTo(y.get(y.size() - 1)));
             for (String word : wordList) {
                 Set<String> entry = wordsWithTags.get(word.toLowerCase());
                 if (entry != null) {
-                    System.out.println(word + " - " + entry.toString());
+                    _updateTimelines(word.toLowerCase(), timelines, wordsWithTags, followingTags);
                 }
                 else {
                     System.out.println(word + " - no entries found");
                 }
             }
+            System.out.println(timelines);
         } while (_getYN("Add another sentence?"));
+
+        System.out.println("Thanks for stopping by!");
+    }
+    
+    private static void _updateTimelines(String word, Set<List<String>> timelines,
+                                        Map<String, Set<String>> wordsWithTags, 
+                                        Map<String, Set<String>> followingTags) {
+        Set<String> possibleTags = wordsWithTags.get(word);
+        if (timelines.size() == 0) {
+            for (String tag : possibleTags) {
+                List<String> newTimeline = new ArrayList<>();
+                newTimeline.add(tag);
+                timelines.add(newTimeline);
+            }
+        } else {
+            Set<List<String>> timelinesCopy = new TreeSet<>((x, y) -> x.get(x.size() - 1).compareTo(y.get(y.size() - 1)));
+            timelinesCopy.addAll(timelines);
+            for (var timeline : timelinesCopy) {
+                String lastTag = timeline.get(timeline.size() - 1);
+                Set<String> followables = followingTags.get(lastTag);
+                List<String> validTags = _unionOf(followables, possibleTags);
+                int size = validTags.size();
+                if (size == 0) {
+                    timelines.removeIf(tl -> tl.equals(timeline));
+                } else if (size == 1) {
+                    timeline.add(validTags.get(0));
+                } else {
+                    timeline.add(validTags.get(0));
+                    for (int i = 1; i < size; i++) {
+                        List<String> newTimeline = new ArrayList<>(timeline);
+                        newTimeline.add(validTags.get(i));
+                        timelines.add(newTimeline);
+                    }
+                }
+            }
+        }
+    }
+
+    private static List<String> _unionOf(Set<String> set1, Set<String> set2) {
+        List<String> union = new ArrayList<>();
+        for (String elem : set1) {
+            if (set2.contains(elem)) {
+                union.add(elem);
+            }
+        }
+        return union;
     }
 
     @SuppressWarnings("resource")
