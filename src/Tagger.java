@@ -13,31 +13,45 @@ public class Tagger {
         String filename = scanner.next();
 
         // Timed it 100 times; the processing is almost exactly 1 sec on average
-        var twoMaps = FileReader.getWordMaps(filename);
-        Map<Word, Integer> wordsWithFreqs = twoMaps.map1();
-        Map<String, Set<String>> followingTags = twoMaps.map2();
-        Map<String, Set<String>> wordsWithTags = MapTools.extractTags(wordsWithFreqs);
-        Map<Integer, Set<Word>> freqsWithWords = MapTools.invertMap(wordsWithFreqs);
-        Map<Integer, Set<Word>> roundedFreqs = MapTools.roundMap(freqsWithWords);
-        MapTools.printMap(roundedFreqs, 30, true);
+        var freqsAndTags = FileReader.getWordMaps(filename);
+        Map<Word, Integer> wordsWithFreqs = freqsAndTags.map1();
+        Map<String, Set<String>> followingTags = freqsAndTags.map2();
+        Map<Word, Set<String>> wordsWithTags = MapTools.extractTags(wordsWithFreqs);
 
         do {
             System.out.println();
+
+            record WordAndBound (String rawWord, Word.Boundary boundary) {}
             String words = _getString("Enter a sentence to tag: ");
-            // Remove apostrophes and punctuation to match Word objects
-            StringBuilder sb = new StringBuilder();
-            for (char ch : words.toCharArray()) {
-                if (ch == ' ' || Character.isAlphabetic(ch)) {
-                    sb.append(ch);
-                }
-            }
+            String[] rawWords = words.split(" ");
+            List<WordAndBound> wordList = new ArrayList<>();
             
-            String[] wordList = sb.toString().split(" ");
+            boolean startOfClause = false;    
+            for (String wordString : rawWords) {
+                char firstChar = wordString.toCharArray()[0];
+                WordAndBound newWord;
+                if (!Character.isAlphabetic(firstChar)) {
+                    startOfClause = true;
+                    WordAndBound last = wordList.getLast();
+                    if (last == null) {
+                        continue;
+                    }
+                    wordList.removeLast();
+                    newWord = new WordAndBound(wordString, Word.Boundary.END);
+                } else if (startOfClause) {
+                    newWord = new WordAndBound(wordString, Word.Boundary.START);
+                    startOfClause = false;
+                } else {
+                    newWord = new WordAndBound(wordString, Word.Boundary.END);
+                }
+                wordList.add(newWord);
+            }
+
             Set<List<String>> timelines = new TreeSet<>((x, y) -> x.get(x.size() - 1).compareTo(y.get(y.size() - 1)));
-            for (String word : wordList) {
-                Set<String> entry = wordsWithTags.get(word.toLowerCase());
-                if (entry != null) {
-                    timelines = _updateTimelines(word.toLowerCase(), timelines, wordsWithTags, followingTags);
+            for (Word word : wordList) {
+                Set<String> tagEntries = wordsWithTags.get(word);
+                if (tagEntries != null) {
+                    timelines = _updateTimelines(word, timelines, wordsWithTags, followingTags);
                 }
                 else {
                     System.out.println(word + " - no entries found");
@@ -49,8 +63,8 @@ public class Tagger {
         System.out.println("Thanks for stopping by!");
     }
     
-    private static Set<List<String>> _updateTimelines(String word, Set<List<String>> timelines,
-                                        Map<String, Set<String>> wordsWithTags, 
+    private static Set<List<String>> _updateTimelines(Word word, Set<List<String>> timelines,
+                                        Map<Word, Set<String>> wordsWithTags, 
                                         Map<String, Set<String>> followingTags) {
         Set<String> possibleTags = wordsWithTags.get(word);
         // Force timelines to be a TreeSet so comparator() works

@@ -2,7 +2,6 @@ public class Word implements Comparable<Word> {
     public static enum Boundary {START, END, NONE};
     private String _word;
     private String _tag;
-    private Boundary _clauseBound;
 
     public Word(String wordWithAnnotation, Boundary clauseBoundary) throws IllegalArgumentException {
         if (!wordWithAnnotation.contains("_")) {
@@ -13,14 +12,20 @@ public class Word implements Comparable<Word> {
             throw new IllegalArgumentException("failed to split "+wordWithAnnotation);
         }
         _word = arr[0].toLowerCase();
-        _tag = arr[1];
-        _clauseBound = clauseBoundary;
+        StringBuilder sb = new StringBuilder();
+        sb.append(arr[1]);
+        sb.append(";");
+        sb.append(clauseBoundary);
+        _tag = sb.toString();
     }
 
     public Word(String word, String tag, Boundary clauseBoundary) {
         _word = word;
-        _tag = tag;
-        _clauseBound = clauseBoundary;
+        StringBuilder sb = new StringBuilder();
+        sb.append(tag);
+        sb.append(";");
+        sb.append(clauseBoundary);
+        _tag = sb.toString();
     }
 
     public String getWord() {
@@ -31,7 +36,7 @@ public class Word implements Comparable<Word> {
     }
     @Override
     public String toString() {
-        return String.format("%s - %s (%s)", _word, _tag, _clauseBound);
+        return _word + " - " + _tag;
     }
 
     @Override

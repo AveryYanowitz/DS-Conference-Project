@@ -76,11 +76,11 @@ public class MapTools {
         return roundedMap;
     }
 
-    public static Map<String, Set<String>> extractTags(Map <Word, Integer> extractMap) {
-        Map<String, Set<String>> tagMap = new TreeMap<>();
+    public static Map<Word, Set<String>> extractTags(Map <Word, Integer> extractMap) {
+        Map<Word, Set<String>> tagMap = new TreeMap<>();
         Set<Word> keySet = extractMap.keySet();
         for (Word key : keySet) {
-            mergeIntoSet(key.getWord(), key.getTag(), tagMap);
+            mergeIntoSet(key, key.getTag(), tagMap);
         }
         return tagMap;
     }

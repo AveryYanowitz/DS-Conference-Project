@@ -34,8 +34,8 @@ public class FileReader {
                 String nextWord = scanner.next();
                 Word newWord;
                 try {
-                    // If the 'word' is punctuation, its first character won't be
-                    // alphabetic, so we want to exclude it.
+                    // If the 'word' is punctuation, then
+                    // its first character won't be alphabetic
                     char firstChar = nextWord.toCharArray()[0];
                     if (!Character.isAlphabetic(firstChar)) {
                         startOfClause = true;
