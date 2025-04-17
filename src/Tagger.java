@@ -17,9 +17,11 @@ public class Tagger {
         Map<Word, Integer> wordsWithFreqs = twoMaps.map1();
         Map<String, Set<String>> followingTags = twoMaps.map2();
         Map<String, Set<String>> wordsWithTags = MapTools.extractTags(wordsWithFreqs);
-        // Map<Integer, Set<Word>> freqsWithWords = MapTools.invertMap(wordsWithFreqs);
-        // Map<Integer, Set<Word>> roundedFreqs = MapTools.roundMap(freqsWithWords);
-        do {        
+        Map<Integer, Set<Word>> freqsWithWords = MapTools.invertMap(wordsWithFreqs);
+        Map<Integer, Set<Word>> roundedFreqs = MapTools.roundMap(freqsWithWords);
+        MapTools.printMap(roundedFreqs, 30, true);
+
+        do {
             System.out.println();
             String words = _getString("Enter a sentence to tag: ");
             // Remove apostrophes and punctuation to match Word objects

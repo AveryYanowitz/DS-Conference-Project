@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class FileReader {
-    public record mapTuple<K, V, J, W>(Map<K, V> map1, Map<J, W> map2) { }
+    public record mapTuple<K, V, K2, V2>(Map<K, V> map1, Map<K2, V2> map2) { }
     public static mapTuple<Word, Integer, String, Set<String>> getWordMaps(String filename) {
         File txtFile = getFile(filename);
         var maps = readFile(txtFile);
@@ -27,27 +27,42 @@ public class FileReader {
                                                     tag2.compareTo(tag1));
         try {
             Scanner scanner = new Scanner(file);
-            String previous_tag = null;
+            String previousTag = null;
+            Word lastWord = null;
+            boolean startOfClause = false;
             while (scanner.hasNext()) {
                 String nextWord = scanner.next();
+                Word newWord;
                 try {
                     // If the 'word' is punctuation, its first character won't be
                     // alphabetic, so we want to exclude it.
                     char firstChar = nextWord.toCharArray()[0];
                     if (!Character.isAlphabetic(firstChar)) {
-                        continue;
+                        startOfClause = true;
+                        if (lastWord == null) {
+                            continue;
+                        }
+                        // the last word was actually an instance of Boundary.END, so
+                        // we have to decrement its count in wordMap accordingly
+                        int previousFreq = wordMap.get(lastWord);
+                        wordMap.put(lastWord, previousFreq - 1);
+
+                        newWord = new Word(lastWord.getWord(), lastWord.getTag(), Word.Boundary.END);
+                    } else {
+                        newWord = startOfClause ? new Word(nextWord, Word.Boundary.START) : new Word(nextWord, Word.Boundary.NONE);
+                        startOfClause = false;
                     }
-                    Word newWord = new Word(nextWord);
                     wordMap.merge(newWord, 1, (current, given) -> current + 1);
                     
                     // Add the previous tag as the key and a set containing the current tag as
                     // the value; if the key already exists, add the current tag to its set
-                    String current_tag = newWord.getTag();
-                    // System.out.println(current_tag);
-                    if (previous_tag != null) {
-                        MapTools.mergeIntoSet(previous_tag, current_tag, tagMap);
+                    String currentTag = newWord.getTag();
+                    // System.out.println(currentTag);
+                    if (previousTag != null) {
+                        MapTools.mergeIntoSet(previousTag, currentTag, tagMap);
                     }
-                    previous_tag = current_tag;
+                    lastWord = newWord;
+                    previousTag = currentTag;
                     
                 } catch (IllegalArgumentException e) {
                     System.out.println("Couldn't read token '"+nextWord+"'");

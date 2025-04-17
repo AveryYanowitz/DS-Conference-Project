@@ -1,7 +1,10 @@
 public class Word implements Comparable<Word> {
+    public static enum Boundary {START, END, NONE};
     private String _word;
     private String _tag;
-    public Word(String wordWithAnnotation) throws IllegalArgumentException {
+    private Boundary _clauseBound;
+
+    public Word(String wordWithAnnotation, Boundary clauseBoundary) throws IllegalArgumentException {
         if (!wordWithAnnotation.contains("_")) {
             throw new IllegalArgumentException(wordWithAnnotation + " has no annotation");
         }
@@ -11,6 +14,13 @@ public class Word implements Comparable<Word> {
         }
         _word = arr[0].toLowerCase();
         _tag = arr[1];
+        _clauseBound = clauseBoundary;
+    }
+
+    public Word(String word, String tag, Boundary clauseBoundary) {
+        _word = word;
+        _tag = tag;
+        _clauseBound = clauseBoundary;
     }
 
     public String getWord() {
@@ -21,7 +31,7 @@ public class Word implements Comparable<Word> {
     }
     @Override
     public String toString() {
-        return _word + " - " + _tag;
+        return String.format("%s - %s (%s)", _word, _tag, _clauseBound);
     }
 
     @Override
@@ -39,15 +49,12 @@ public class Word implements Comparable<Word> {
     }
 
     public int compareTo(Word other) {
-        // If they're the same, return zero
         if (other.equals(this)) {
             return 0;
         }
-        // If the words are the same, return by tag
-        if (other._word.equals(_word)) {
-            return other._tag.compareTo(_tag);
+        if (!other._word.equals(_word)) {
+            return other._word.compareTo(_word);
         }
-        // Otherwise, return by word
-        return other._word.compareTo(_word);
+        return other._tag.compareTo(_tag);
     }
 }
