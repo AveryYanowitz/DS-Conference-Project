@@ -35,7 +35,7 @@ public class Tagger {
             for (String word : wordList) {
                 Set<String> entry = wordsWithTags.get(word.toLowerCase());
                 if (entry != null) {
-                    _updateTimelines(word.toLowerCase(), timelines, wordsWithTags, followingTags);
+                    timelines = _updateTimelines(word.toLowerCase(), timelines, wordsWithTags, followingTags);
                 }
                 else {
                     System.out.println(word + " - no entries found");
@@ -47,48 +47,44 @@ public class Tagger {
         System.out.println("Thanks for stopping by!");
     }
     
-    private static void _updateTimelines(String word, Set<List<String>> timelines,
+    private static Set<List<String>> _updateTimelines(String word, Set<List<String>> timelines,
                                         Map<String, Set<String>> wordsWithTags, 
                                         Map<String, Set<String>> followingTags) {
         Set<String> possibleTags = wordsWithTags.get(word);
+        // Force timelines to be a TreeSet so comparator() works
+        var cmp = ((TreeSet<List<String>>)timelines).comparator();
+        Set<List<String>> timelinesUpdated = new TreeSet<>(cmp);
         if (timelines.size() == 0) {
             for (String tag : possibleTags) {
                 List<String> newTimeline = new ArrayList<>();
                 newTimeline.add(tag);
-                timelines.add(newTimeline);
+                timelinesUpdated.add(newTimeline);
             }
         } else {
-            Set<List<String>> timelinesCopy = new TreeSet<>((x, y) -> x.get(x.size() - 1).compareTo(y.get(y.size() - 1)));
-            timelinesCopy.addAll(timelines);
-            for (var timeline : timelinesCopy) {
-                String lastTag = timeline.get(timeline.size() - 1);
-                Set<String> followables = followingTags.get(lastTag);
-                List<String> validTags = _unionOf(followables, possibleTags);
+            for (var timeline : timelines) {
+                Set<String> followables = followingTags.get(timeline.getLast());
+                List<String> validTags = _intersectionOf(followables, possibleTags);
                 int size = validTags.size();
-                if (size == 0) {
-                    timelines.removeIf(tl -> tl.equals(timeline));
-                } else if (size == 1) {
-                    timeline.add(validTags.get(0));
-                } else {
-                    timeline.add(validTags.get(0));
-                    for (int i = 1; i < size; i++) {
+                if (size > 0) {
+                    for (int i = 0; i < size; i++) {
                         List<String> newTimeline = new ArrayList<>(timeline);
                         newTimeline.add(validTags.get(i));
-                        timelines.add(newTimeline);
+                        timelinesUpdated.add(newTimeline);
                     }
                 }
             }
         }
+    return timelinesUpdated;
     }
 
-    private static List<String> _unionOf(Set<String> set1, Set<String> set2) {
-        List<String> union = new ArrayList<>();
+    private static List<String> _intersectionOf(Set<String> set1, Set<String> set2) {
+        List<String> intersection = new ArrayList<>();
         for (String elem : set1) {
             if (set2.contains(elem)) {
-                union.add(elem);
+                intersection.add(elem);
             }
         }
-        return union;
+        return intersection;
     }
 
     @SuppressWarnings("resource")

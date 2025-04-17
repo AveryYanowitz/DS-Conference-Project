@@ -8,5 +8,7 @@
         "followables",
         "Freqs",
         "partof"
-    ]
+    ],
+    "java.project.explorer.showNonJavaResources": true,
+    "java.dependency.syncWithFolderExplorer": true
 }
