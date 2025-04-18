@@ -94,5 +94,24 @@ public class Utilities {
             return oldSet;
         });
     }
+
+    public static String stripNonAlpha(String oldString) {
+        StringBuilder sb = new StringBuilder();
+        for (char ch : oldString.toCharArray()) {
+            if (Character.isAlphabetic(ch)) {
+                sb.append(ch);
+            }
+        }
+        return sb.toString();
+    }
+
+    public static boolean hasNonAlpha(String s) {
+        for (char ch : s.toCharArray()) {
+            if (!Character.isAlphabetic(ch)) {
+                return true;
+            }
+        }
+        return false;
+    }
     
 }

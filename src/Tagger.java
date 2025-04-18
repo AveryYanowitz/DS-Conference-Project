@@ -1,7 +1,9 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Scanner;
 
@@ -19,47 +21,54 @@ public class Tagger {
         System.out.print("Enter filename: ");
         String filename = scanner.next();
 
-        // Timed it 100 times; the processing is almost exactly 1 sec on average
+        // Timed it 100x; the processing for these lines is ~1 sec on average
         var freqsTagsTuple = FileReader.getWordMaps(filename);
         Map<Word, Integer> wordsWithFreqs = freqsTagsTuple.map1();
         Map<String, Set<String>> followingTags = freqsTagsTuple.map2();
         Map<String, Set<String>> wordsWithTags = Utilities.extractTags(wordsWithFreqs);
+        
+        // This map shows which boundaries can follow each other
+        Map<Word.Boundary, List<Word.Boundary>> boundariesAllowed = new TreeMap<>();
+        final Word.Boundary[] startArr = {Word.Boundary.START};
+        final Word.Boundary[] elseArr = {Word.Boundary.MIDDLE, Word.Boundary.END};
+
+        boundariesAllowed.put(Word.Boundary.START, Arrays.asList(elseArr));
+        boundariesAllowed.put(Word.Boundary.MIDDLE, Arrays.asList(elseArr));
+        boundariesAllowed.put(Word.Boundary.END, Arrays.asList(startArr));
 
         do {
             System.out.println();
 
-            String words = _getString("Enter a sentence to tag: ");
-            String[] rawWords = words.split(" ");
+            // Get a sentence from a user, take the words, and turn them into WordAndBound records
+            String sentence = _getString("Enter a sentence to tag: ");
+            String[] rawWords = sentence.split(" ");
             List<WordAndBound> wordList = new ArrayList<>();
             
             boolean startOfClause = true;
             for (String wordString : rawWords) {
-                char firstChar = wordString.toCharArray()[0];
                 WordAndBound newWord;
-                if (!Character.isAlphabetic(firstChar)) {
+                if (Utilities.hasNonAlpha(wordString)) {
                     startOfClause = true;
-                    if (wordList.getLast() == null) {
-                        continue;
-                    }
-                    wordList.removeLast();
-                    newWord = new WordAndBound(wordString, Word.Boundary.END);
+                    newWord = new WordAndBound(Utilities.stripNonAlpha(wordString), Word.Boundary.END);
                 } else if (startOfClause) {
-                    newWord = new WordAndBound(wordString, Word.Boundary.START);
                     startOfClause = false;
+                    newWord = new WordAndBound(wordString, Word.Boundary.START);
                 } else {
-                    newWord = new WordAndBound(wordString, Word.Boundary.END);
+                    newWord = new WordAndBound(wordString, Word.Boundary.MIDDLE);
                 }
                 wordList.add(newWord);
             }
 
+            // The final word is always the end of a clause (assuming a well-formed sentence)
+            WordAndBound lastWord = wordList.removeLast();
+            wordList.add(new WordAndBound(lastWord.rawWord(), Word.Boundary.END));
+
+            // Take each word in wordList in order and use it to update existing timelines
             Set<List<String>> timelines = new TreeSet<>((x, y) -> x.get(x.size() - 1).compareTo(y.get(y.size() - 1)));
             for (WordAndBound word : wordList) {
                 Set<String> tags = wordsWithTags.get(word.rawWord());
                 if (tags != null) {
-                    // Need wrapper so lastBoundary can be updated but not returned.
-                    // This is very inelegant, so I'll (hopefully) fix it later.
-                    Word.Boundary[] lastBoundary = { Word.Boundary.START };
-                    timelines = _updateTimelines(word, timelines, wordsWithTags, followingTags, lastBoundary);
+                    timelines = _updateTimelines(word, timelines, tags, followingTags, boundariesAllowed);
                     // If no possible timelines are left, we're done
                     if (timelines.size() == 0) {
                         break;
@@ -76,34 +85,35 @@ public class Tagger {
     }
     
     private static Set<List<String>> _updateTimelines(WordAndBound word, Set<List<String>> timelines,
-                                        Map<String, Set<String>> wordsWithTags, 
-                                        Map<String, Set<String>> followingTags,
-                                        Word.Boundary[] lastBoundary) {
+                                        Set<String> possibleTags, Map<String, Set<String>> followingTags,
+                                        Map<Word.Boundary, List<Word.Boundary>> boundariesAllowed) {
 
-        Set<String> possibleTags = wordsWithTags.get(word.rawWord());
         // Force timelines to be a TreeSet so comparator() works
         var cmp = ((TreeSet<List<String>>)timelines).comparator();
         Set<List<String>> timelinesUpdated = new TreeSet<>(cmp);
-        Word.Boundary currentBoundary = lastBoundary[0];
         
         // Special case: no timelines added yet
         if (timelines.size() == 0) {
-            if (word.boundary() != currentBoundary) {
-                // Return empty TL if first word can't start sentence;
-                // this will reject the entire timeline
-                return timelinesUpdated;
-            }
             for (String tag : possibleTags) {
+                if (Word.getBoundary(tag) != Word.Boundary.START) {
+                    continue;
+                }
                 List<String> newTimeline = new ArrayList<>();
                 newTimeline.add(tag);
                 timelinesUpdated.add(newTimeline);
-                lastBoundary[0] = Word.Boundary.START;
             }
         } else {
             for (List<String> timeline : timelines) {
                 Set<String> followables = followingTags.get(timeline.getLast());
-                List<String> validTags = _intersectionOf(followables, possibleTags);
+                List<String> validTags = _getFollowers(followables, possibleTags);
+                Word.Boundary lastBound = Word.getBoundary(timeline.getLast());
                 for (String tag : validTags) {
+                    Word.Boundary thisBound = Word.getBoundary(tag);
+                    var followingBounds = boundariesAllowed.get(lastBound);
+                    // Check for invalid boundaries
+                    if (thisBound != word.boundary() || !followingBounds.contains(thisBound)) {
+                        continue;
+                    }
                     List<String> newTimeline = new ArrayList<>(timeline);
                     newTimeline.add(tag);
                     timelinesUpdated.add(newTimeline);
@@ -113,11 +123,14 @@ public class Tagger {
         return timelinesUpdated;
     }
 
-    private static <T> List<T> _intersectionOf(Set<T> set1, Set<T> set2) {
-        List<T> intersection = new ArrayList<>();
-        for (T elem : set1) {
-            if (set2.contains(elem)) {
-                intersection.add(elem);
+    private static List<String> _getFollowers(Set<String> followables, Set<String> allPossible) {
+        List<String> intersection = new ArrayList<>();
+        for (String follower : followables) {
+            for (String possible : allPossible) {
+                if (follower.equals(possible)
+                || Word.getPOS(follower).equals(Word.getPOS(possible))) {
+                    intersection.add(possible);
+                }
             }
         }
         return intersection;

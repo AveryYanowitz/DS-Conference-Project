@@ -50,7 +50,7 @@ public class FileReader {
                         // Then we want to add it again, but with the END boundary
                         newWord = new Word(lastWord.getWord(), lastWord.getTag(), Word.Boundary.END);
                     } else {
-                        newWord = startOfClause ? new Word(nextWord, Word.Boundary.START) : new Word(nextWord, Word.Boundary.NONE);
+                        newWord = startOfClause ? new Word(nextWord, Word.Boundary.START) : new Word(nextWord, Word.Boundary.MIDDLE);
                         startOfClause = false;
                     }
                     wordMap.merge(newWord, 1, (current, given) -> current + 1);

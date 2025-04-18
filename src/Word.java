@@ -1,5 +1,5 @@
 public class Word implements Comparable<Word> {
-    public static enum Boundary {START, END, NONE};
+    public static enum Boundary {START, END, MIDDLE};
     private String _word;
     private String _tag;
 
@@ -22,10 +22,7 @@ public class Word implements Comparable<Word> {
     public Word(String word, String tag, Boundary clauseBoundary) {
         _word = word;
         StringBuilder sb = new StringBuilder();
-        if (tag.contains(";")) { // if clause boundary already present,
-            tag = tag.split(";")[0]; // remove it
-        }
-        sb.append(tag);
+        sb.append(getPOS(tag)); // Remove the boundary from it
         sb.append(";");
         sb.append(clauseBoundary);
         _tag = sb.toString();
@@ -37,6 +34,13 @@ public class Word implements Comparable<Word> {
     public String getTag() {
         return _tag;
     }
+    public Word.Boundary getBoundary() {
+        return getBoundary(_tag);
+    }
+    public String getPOS() {
+        return getPOS(_tag);
+    }
+
     @Override
     public String toString() {
         return _word + " - " + _tag;
@@ -56,6 +60,7 @@ public class Word implements Comparable<Word> {
         return false;
     }
 
+    @Override
     public int compareTo(Word other) {
         if (other.equals(this)) {
             return 0;
@@ -64,5 +69,24 @@ public class Word implements Comparable<Word> {
             return other._word.compareTo(_word);
         }
         return other._tag.compareTo(_tag);
+    }
+
+    public static Word.Boundary getBoundary(String tag) {
+        try {
+            String boundaryString = tag.split(";")[1];
+            if (boundaryString.equals("START")) {
+                return Word.Boundary.START;
+            } else if (boundaryString.equals("MIDDLE")) {
+                return Word.Boundary.MIDDLE;
+            } else {
+                return Word.Boundary.END;
+            }
+        } catch (ArrayIndexOutOfBoundsException exception) {
+            return null; // No boundary found in string
+        }
+    }
+
+    public static String getPOS(String tag) {
+        return tag.split(";")[0];
     }
 }
