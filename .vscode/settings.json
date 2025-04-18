@@ -7,7 +7,8 @@
     "cSpell.words": [
         "followables",
         "Freqs",
-        "partof"
+        "partof",
+        "punc"
     ],
     "java.project.explorer.showNonJavaResources": true,
     "java.dependency.syncWithFolderExplorer": true

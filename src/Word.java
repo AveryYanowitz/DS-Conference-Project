@@ -22,6 +22,9 @@ public class Word implements Comparable<Word> {
     public Word(String word, String tag, Boundary clauseBoundary) {
         _word = word;
         StringBuilder sb = new StringBuilder();
+        if (tag.contains(";")) { // if clause boundary already present,
+            tag = tag.split(";")[0]; // remove it
+        }
         sb.append(tag);
         sb.append(";");
         sb.append(clauseBoundary);

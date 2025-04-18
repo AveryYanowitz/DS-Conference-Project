@@ -32,9 +32,9 @@ public class FileReader {
             boolean startOfClause = false;
             while (scanner.hasNext()) {
                 String nextWord = scanner.next();
-                Word newWord;
+                final Word newWord;
                 try {
-                    // If the 'word' is punctuation, then
+                    // If the 'word' is punc_mark, then
                     // its first character won't be alphabetic
                     char firstChar = nextWord.toCharArray()[0];
                     if (!Character.isAlphabetic(firstChar)) {
@@ -47,6 +47,7 @@ public class FileReader {
                         int previousFreq = wordMap.get(lastWord);
                         wordMap.put(lastWord, previousFreq - 1);
 
+                        // Then we want to add it again, but with the END boundary
                         newWord = new Word(lastWord.getWord(), lastWord.getTag(), Word.Boundary.END);
                     } else {
                         newWord = startOfClause ? new Word(nextWord, Word.Boundary.START) : new Word(nextWord, Word.Boundary.NONE);
@@ -57,9 +58,8 @@ public class FileReader {
                     // Add the previous tag as the key and a set containing the current tag as
                     // the value; if the key already exists, add the current tag to its set
                     String currentTag = newWord.getTag();
-                    // System.out.println(currentTag);
                     if (previousTag != null) {
-                        MapTools.mergeIntoSet(previousTag, currentTag, tagMap);
+                        Utilities.mergeIntoSet(previousTag, currentTag, tagMap);
                     }
                     lastWord = newWord;
                     previousTag = currentTag;

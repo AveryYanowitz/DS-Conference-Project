@@ -4,7 +4,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.TreeMap;
 
-public class MapTools {
+public class Utilities {
 
     public static <K, V> void printMap(Map<K, V> mapToPrint, int numToPrint, boolean backwards) {
         ArrayList<Map.Entry<K, V>> wordList = new ArrayList<>(mapToPrint.entrySet());
@@ -76,11 +76,11 @@ public class MapTools {
         return roundedMap;
     }
 
-    public static Map<Word, Set<String>> extractTags(Map <Word, Integer> extractMap) {
-        Map<Word, Set<String>> tagMap = new TreeMap<>();
+    public static Map<String, Set<String>> extractTags(Map <Word, Integer> extractMap) {
+        Map<String, Set<String>> tagMap = new TreeMap<>();
         Set<Word> keySet = extractMap.keySet();
         for (Word key : keySet) {
-            mergeIntoSet(key, key.getTag(), tagMap);
+            mergeIntoSet(key.getWord(), key.getTag(), tagMap);
         }
         return tagMap;
     }
