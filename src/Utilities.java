@@ -98,7 +98,7 @@ public class Utilities {
     public static String stripNonAlpha(String oldString) {
         StringBuilder sb = new StringBuilder();
         for (char ch : oldString.toCharArray()) {
-            if (Character.isAlphabetic(ch)) {
+            if (Character.isAlphabetic(ch) || acceptAnyway(ch)) {
                 sb.append(ch);
             }
         }
@@ -107,11 +107,20 @@ public class Utilities {
 
     public static boolean hasNonAlpha(String s) {
         for (char ch : s.toCharArray()) {
-            if (!Character.isAlphabetic(ch)) {
+            if (!Character.isAlphabetic(ch) && !acceptAnyway(ch)) {
                 return true;
             }
         }
         return false;
+    }
+
+    // I don't know what to name this
+    public static boolean isExpandedAlpha(char ch) {
+        return acceptAnyway(ch) || Character.isAlphabetic(ch);
+    }
+
+    private static boolean acceptAnyway(char ch) {
+        return ch != '\'' || ch != '"' || ch != '_';
     }
     
 }

@@ -15,14 +15,9 @@ public class Tagger {
         }
     }
 
-    @SuppressWarnings("resource")
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter filename: ");
-        String filename = scanner.next();
-
         // Timed it 100x; the processing for these lines is ~1 sec on average
-        var freqsTagsTuple = FileReader.getWordMaps(filename);
+        var freqsTagsTuple = FileReader.getWordMaps("browntag.txt");
         Map<Word, Integer> wordsWithFreqs = freqsTagsTuple.map1();
         Map<String, Set<String>> followingTags = freqsTagsTuple.map2();
         Map<String, Set<String>> wordsWithTags = Utilities.extractTags(wordsWithFreqs);

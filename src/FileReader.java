@@ -8,15 +8,8 @@ import java.util.TreeMap;
 public class FileReader {
     public record mapTuple<K, V, K2, V2>(Map<K, V> map1, Map<K2, V2> map2) { }
     public static mapTuple<Word, Integer, String, Set<String>> getWordMaps(String filename) {
-        File txtFile = getFile(filename);
-        var maps = readFile(txtFile);
+        var maps = readFile(new File ("assets",filename));
         return maps;
-    }
-
-    // @SuppressWarnings("resource")
-    private static File getFile(String filename) {
-        File file = new File("assets",filename);
-        return file;
     }
 
     private static mapTuple<Word, Integer, String, Set<String>> readFile(File file) {
@@ -29,16 +22,16 @@ public class FileReader {
             Scanner scanner = new Scanner(file);
             String previousTag = null;
             Word lastWord = null;
-            boolean startOfClause = false;
+            boolean atClauseStart = false;
             while (scanner.hasNext()) {
                 String nextWord = scanner.next();
                 final Word newWord;
                 try {
-                    // If the 'word' is punc_mark, then
+                    // If the "word" is a punctuation mark, 
                     // its first character won't be alphabetic
                     char firstChar = nextWord.toCharArray()[0];
                     if (!Character.isAlphabetic(firstChar)) {
-                        startOfClause = true;
+                        atClauseStart = true;
                         if (lastWord == null) {
                             continue;
                         }
@@ -50,8 +43,8 @@ public class FileReader {
                         // Then we want to add it again, but with the END boundary
                         newWord = new Word(lastWord.getWord(), lastWord.getTag(), Word.Boundary.END);
                     } else {
-                        newWord = startOfClause ? new Word(nextWord, Word.Boundary.START) : new Word(nextWord, Word.Boundary.MIDDLE);
-                        startOfClause = false;
+                        newWord = atClauseStart ? new Word(nextWord, Word.Boundary.START) : new Word(nextWord, Word.Boundary.MIDDLE);
+                        atClauseStart = false;
                     }
                     wordMap.merge(newWord, 1, (current, given) -> current + 1);
                     
