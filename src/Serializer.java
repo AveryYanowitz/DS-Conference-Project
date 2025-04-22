@@ -1,12 +1,12 @@
+import java.util.Map;
+import java.util.Set;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Map;
-import java.util.Set;
+import java.io.IOException;
 
 public class Serializer {
     public static <K, V> void exportMap(Map<K, V> map, File f) {

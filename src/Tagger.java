@@ -19,14 +19,12 @@ public class Tagger {
 
     public static void main(String[] args) {
         // Timed it 100x; the processing for these lines is ~1 sec on average
-        Map<Word, Integer> wordsWithFreqs = null;
         Map<String, Set<String>> followingTags = null;
         Map<String, Set<String>> wordsWithTags = null;
-
+        
         try {            
-            wordsWithFreqs = Serializer.importMap(new File("assets","wordsWithFreqs.ser"));
-            followingTags = Serializer.importMap(new File("assets","followingTags.ser"));;
-            wordsWithTags = Serializer.importMap(new File("assets","wordsWithTags.ser"));;
+            followingTags = Serializer.importMap(new File("assets","followingTags.ser"));
+            wordsWithTags = Serializer.importMap(new File("assets","wordsWithTags.ser"));
         } catch (IOException io) {
             io.printStackTrace();
         } catch (ClassNotFoundException cnf) {
