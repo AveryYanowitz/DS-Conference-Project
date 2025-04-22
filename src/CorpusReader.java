@@ -39,8 +39,7 @@ public class CorpusReader {
                 try {
                     // If the "word" is a punctuation mark, 
                     // its first character won't be alphabetic
-                    char firstChar = nextWord.toCharArray()[0];
-                    if (!Character.isAlphabetic(firstChar)) {
+                    if (!Character.isAlphabetic(nextWord.charAt(0))) {
                         atClauseStart = true;
                         if (lastWord == null) {
                             continue;

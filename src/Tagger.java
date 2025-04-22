@@ -34,12 +34,12 @@ public class Tagger {
         
         // This map shows which boundaries can follow each other
         Map<Word.Boundary, List<Word.Boundary>> boundariesAllowed = new TreeMap<>();
-        final Word.Boundary[] startArr = {Word.Boundary.START};
-        final Word.Boundary[] elseArr = {Word.Boundary.MIDDLE, Word.Boundary.END};
+        final Word.Boundary[] start = {Word.Boundary.START};
+        final Word.Boundary[] nonStart = {Word.Boundary.MIDDLE, Word.Boundary.END};
 
-        boundariesAllowed.put(Word.Boundary.START, Arrays.asList(elseArr));
-        boundariesAllowed.put(Word.Boundary.MIDDLE, Arrays.asList(elseArr));
-        boundariesAllowed.put(Word.Boundary.END, Arrays.asList(startArr));
+        boundariesAllowed.put(Word.Boundary.START, Arrays.asList(nonStart));
+        boundariesAllowed.put(Word.Boundary.MIDDLE, Arrays.asList(nonStart));
+        boundariesAllowed.put(Word.Boundary.END, Arrays.asList(start));
 
         do {
             System.out.println();
