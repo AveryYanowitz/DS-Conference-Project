@@ -1,3 +1,5 @@
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -17,10 +19,20 @@ public class Tagger {
 
     public static void main(String[] args) {
         // Timed it 100x; the processing for these lines is ~1 sec on average
-        var freqsTagsTuple = FileReader.getWordMaps("browntag.txt");
-        Map<Word, Integer> wordsWithFreqs = freqsTagsTuple.map1();
-        Map<String, Set<String>> followingTags = freqsTagsTuple.map2();
-        Map<String, Set<String>> wordsWithTags = Utilities.extractTags(wordsWithFreqs);
+        Map<Word, Integer> wordsWithFreqs = null;
+        Map<String, Set<String>> followingTags = null;
+        Map<String, Set<String>> wordsWithTags = null;
+
+        try {            
+            wordsWithFreqs = Serializer.importMap(new File("assets","wordsWithFreqs.ser"));
+            followingTags = Serializer.importMap(new File("assets","followingTags.ser"));;
+            wordsWithTags = Serializer.importMap(new File("assets","wordsWithTags.ser"));;
+        } catch (IOException io) {
+            io.printStackTrace();
+        } catch (ClassNotFoundException cnf) {
+            cnf.printStackTrace();
+        }
+
         
         // This map shows which boundaries can follow each other
         Map<Word.Boundary, List<Word.Boundary>> boundariesAllowed = new TreeMap<>();

@@ -19,7 +19,7 @@ public class Utilities {
         }
 
         final int MAX_LENGTH = 100;
-        while (numToPrint > 0) {
+        for (int i = 0; i < numToPrint; i++) {
             Map.Entry<K,V> entry = wordList.get(index);
             
             String key_string = entry.getKey().toString();
@@ -39,7 +39,6 @@ public class Utilities {
             System.out.println();
             
             index += index_change;
-            numToPrint--;
         }
     }
 

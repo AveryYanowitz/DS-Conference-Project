@@ -1,4 +1,6 @@
-public class Word implements Comparable<Word> {
+import java.io.Serializable;
+
+public class Word implements Comparable<Word>, Serializable {
     public static enum Boundary {START, END, MIDDLE};
     private String _word;
     private String _tag;

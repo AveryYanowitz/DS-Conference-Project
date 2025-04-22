@@ -1,23 +1,33 @@
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class FileReader {
+public class CorpusReader {
     public record mapTuple<K, V, K2, V2>(Map<K, V> map1, Map<K2, V2> map2) { }
     public static mapTuple<Word, Integer, String, Set<String>> getWordMaps(String filename) {
         var maps = readFile(new File ("assets",filename));
         return maps;
     }
 
+    private static class SerializableComparator<T extends Comparable<T>> implements Comparator<T>, Serializable {
+        @Override
+        public int compare(T o1, T o2) {
+            return o2.compareTo(o1);
+        }
+    }
+
+    private static SerializableComparator<Word> _wordComp = new SerializableComparator<>();
+    private static SerializableComparator<String> _stringComp = new SerializableComparator<>();
+
     private static mapTuple<Word, Integer, String, Set<String>> readFile(File file) {
         // Sort functions make the maps sorted from A -> Z, not Z -> A
-        Map<Word, Integer> wordMap = new TreeMap<>((word1, word2) -> 
-                                                    word2.compareTo(word1));
-        Map<String, Set<String>> tagMap = new TreeMap<>((tag1, tag2) -> 
-                                                    tag2.compareTo(tag1));
+        Map<Word, Integer> wordMap = new TreeMap<>(_wordComp);
+        Map<String, Set<String>> tagMap = new TreeMap<>(_stringComp);
         try {
             Scanner scanner = new Scanner(file);
             String previousTag = null;
