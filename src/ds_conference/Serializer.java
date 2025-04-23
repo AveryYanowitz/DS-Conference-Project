@@ -1,3 +1,5 @@
+package ds_conference;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -70,3 +72,4 @@ public class Serializer {
     }
 
 }
+

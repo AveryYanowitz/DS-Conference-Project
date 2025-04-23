@@ -1,3 +1,5 @@
+package ds_conference;
+
 import java.io.Serializable;
 
 public class Word implements Comparable<Word>, Serializable {
