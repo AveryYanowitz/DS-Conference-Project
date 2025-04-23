@@ -25,11 +25,16 @@ public class Serializer {
     public static void main(String args[]) {
         var freqsTagsTuple = CorpusReader.getWordMaps("brown_tag.txt");
         Map<Word, Integer> wordsWithFreqs = freqsTagsTuple.map1();
-        Map<String, Set<String>> followingTags = freqsTagsTuple.map2();
+        Map<String, Set<String>> beforeTags = freqsTagsTuple.map2();
+        Utilities.printMap(beforeTags, 30, true);
+        System.out.println("\n\n");
+        Map<String, Set<String>> afterTags = freqsTagsTuple.map3();
+        Utilities.printMap(afterTags, 30, true);
         Map<String, Set<String>> wordsWithTags = Utilities.extractTags(wordsWithFreqs);
 
         exportMap(wordsWithFreqs, new File("assets","wordsWithFreqs.ser"));
-        exportMap(followingTags, new File("assets","followingTags.ser"));
+        exportMap(beforeTags, new File("assets","beforeTags.ser"));
+        exportMap(afterTags, new File("assets","afterTags.ser"));
         exportMap(wordsWithTags, new File("assets","wordsWithTags.ser"));
     }
 

@@ -106,7 +106,7 @@ public class Utilities {
 
     public static boolean hasNonAlpha(String s) {
         for (char ch : s.toCharArray()) {
-            if (!isExpandedAlpha(ch)) {
+            if (!Character.isAlphabetic(ch) && !acceptAnyway(ch)) {
                 return true;
             }
         }
