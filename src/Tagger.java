@@ -110,7 +110,7 @@ public class Tagger {
         } else {
             for (List<String> timeline : timelines) {
                 Set<String> followables = followingTags.get(timeline.getLast());
-                List<String> validTags = _getFollowers(followables, possibleTags);
+                List<String> validTags = _intersectionOf(followables, possibleTags);
                 Word.Boundary lastBound = Word.getBoundary(timeline.getLast());
                 for (String tag : validTags) {
                     Word.Boundary thisBound = Word.getBoundary(tag);
@@ -128,13 +128,16 @@ public class Tagger {
         return timelinesUpdated;
     }
 
-    private static List<String> _getFollowers(Set<String> followables, Set<String> allPossible) {
+    // Takes the intersection of two sets; if both elements are word tags, it will
+    // also accept tags that share a part of speech but not a word boundary, because
+    // very rare words caused whole sentences to be rejected otherwise.
+    private static List<String> _intersectionOf(Set<String> set1, Set<String> set2) {
         List<String> intersection = new ArrayList<>();
-        for (String follower : followables) {
-            for (String possible : allPossible) {
-                if (follower.equals(possible)
-                || Word.getPOS(follower).equals(Word.getPOS(possible))) {
-                    intersection.add(possible);
+        for (String elem1 : set1) {
+            for (String elem2 : set2) {
+                if (elem1.equals(elem2)
+                || Word.getPOS(elem1).equals(Word.getPOS(elem2))) {
+                    intersection.add(elem2);
                 }
             }
         }

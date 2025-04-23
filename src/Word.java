@@ -73,6 +73,7 @@ public class Word implements Comparable<Word>, Serializable {
         return other._tag.compareTo(_tag);
     }
 
+    // Returns the "word boundary" chunk of the tag
     public static Word.Boundary getBoundary(String tag) {
         try {
             String boundaryString = tag.split(";")[1];
@@ -88,6 +89,7 @@ public class Word implements Comparable<Word>, Serializable {
         }
     }
 
+    // Returns the "part of speech" chunk of the tag
     public static String getPOS(String tag) {
         return tag.split(";")[0];
     }
