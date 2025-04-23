@@ -31,16 +31,13 @@ public class Serializer {
         var freqsTagsTuple = CorpusReader.getWordMaps("brown_tag.txt");
         Map<Word, Integer> wordsWithFreqs = freqsTagsTuple.map1();
         Map<String, Set<String>> beforeTags = freqsTagsTuple.map2();
-        Utilities.printMap(beforeTags, 30, true);
-        System.out.println("\n\n");
         Map<String, Set<String>> afterTags = freqsTagsTuple.map3();
-        Utilities.printMap(afterTags, 30, true);
         Map<String, Set<String>> wordsWithTags = Utilities.extractTags(wordsWithFreqs);
 
-        exportMap(wordsWithFreqs, new File("assets","wordsWithFreqs.ser"));
-        exportMap(beforeTags, new File("assets","beforeTags.ser"));
-        exportMap(afterTags, new File("assets","afterTags.ser"));
-        exportMap(wordsWithTags, new File("assets","wordsWithTags.ser"));
+        exportMap(wordsWithFreqs, new File("./assets/wordsWithFreqs.ser"));
+        exportMap(beforeTags, new File("./assets/beforeTags.ser"));
+        exportMap(afterTags, new File("./assets/afterTags.ser"));
+        exportMap(wordsWithTags, new File("./assets/wordsWithTags.ser"));
     }
 
     @SuppressWarnings("unchecked")

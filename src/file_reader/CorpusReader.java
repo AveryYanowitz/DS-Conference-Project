@@ -2,11 +2,9 @@ package file_reader;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable; 
 
 import java.util.Scanner;
 import java.util.Set;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -14,21 +12,15 @@ import main.Word;
 import main.Utilities;
 
 public class CorpusReader {
-    private static class SerializableComparator<T extends Comparable<T>> implements Comparator<T>, Serializable {
-        @Override
-        public int compare(T o1, T o2) {
-            return o2.compareTo(o1);
-        }
-    }
-    private static SerializableComparator<Word> _wordComp = new SerializableComparator<>();
-    private static SerializableComparator<String> _stringComp = new SerializableComparator<>();
+    private static SerializableComparator<Word> _wordCompare = new SerializableComparator<>();
+    private static SerializableComparator<String> _stringCompare = new SerializableComparator<>();
     
     public record threeMaps<K, K2, K3, V, V2, V3>(Map<K, V> map1, Map<K2, V2> map2, Map<K3, V3> map3) { }
     public static threeMaps<Word, String, String, Integer, Set<String>, Set<String>> getWordMaps(String filename) {
         // Sort functions make the maps sorted from A -> Z, not Z -> A
-        Map<Word, Integer> wordMap = new TreeMap<>(_wordComp);
-        Map<String, Set<String>> afterTags = new TreeMap<>(_stringComp);
-        Map<String, Set<String>> beforeTags = new TreeMap<>(_stringComp);
+        Map<Word, Integer> wordMap = new TreeMap<>(_wordCompare);
+        Map<String, Set<String>> afterTags = new TreeMap<>(_stringCompare);
+        Map<String, Set<String>> beforeTags = new TreeMap<>(_stringCompare);
         try {
             Scanner scanner = new Scanner(new File ("assets",filename));
             String previousTag = null;

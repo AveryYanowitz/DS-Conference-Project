@@ -30,13 +30,16 @@ public class Tagger {
         Map<String, Set<String>> wordsWithTags = null;
 
         try {
-            precedingTagsMap = Serializer.importMap(new File("assets/beforeTags.ser"));
-            followingTagsMap = Serializer.importMap(new File("assets/afterTags.ser"));
-            wordsWithTags = Serializer.importMap(new File("assets/wordsWithTags.ser"));
+            System.out.println(new File(".").getAbsolutePath());
+            precedingTagsMap = Serializer.importMap(new File("./assets/beforeTags.ser"));
+            followingTagsMap = Serializer.importMap(new File("./assets/afterTags.ser"));
+            wordsWithTags = Serializer.importMap(new File("./assets/wordsWithTags.ser"));
         } catch (IOException io) {
             io.printStackTrace();
+            return;
         } catch (ClassNotFoundException cnf) {
             cnf.printStackTrace();
+            return;
         }
 
         // This map shows which boundaries can follow each other
