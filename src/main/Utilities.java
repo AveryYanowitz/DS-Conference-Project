@@ -1,9 +1,14 @@
 package main;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+
+import main.Word.Boundary;
+
 import java.util.TreeMap;
 
 public class Utilities {
@@ -94,6 +99,30 @@ public class Utilities {
             oldSet.addAll(newSet);
             return oldSet;
         });
+    }
+
+    // Returns a map showing which boundaries follow each other
+    public static Map<Boundary, List<Boundary>> getLegalBoundaryContours() {
+        Map<Boundary, List<Boundary>> legalBoundaryContours = new TreeMap<>();
+        final Boundary[] start = {Boundary.START};
+        final Boundary[] nonStart = {Boundary.MIDDLE, Boundary.END};
+        legalBoundaryContours.put(Boundary.START, Arrays.asList(nonStart));
+        legalBoundaryContours.put(Boundary.MIDDLE, Arrays.asList(nonStart));
+        legalBoundaryContours.put(Boundary.END, Arrays.asList(start));
+        return legalBoundaryContours;
+    } 
+
+
+    public static <T> Set<T> intersection(Set<T> wordSet1, Set<T> wordSet2) {
+        Set<T> intersection = new TreeSet<>();
+        for (T elem1 : wordSet1) {
+            for (T elem2 : wordSet2) {
+                if (elem1.equals(elem2)) {
+                    intersection.add(elem2);
+                }
+            }
+        }
+        return intersection;
     }
 
     public static String stripNonAlpha(String oldString) {

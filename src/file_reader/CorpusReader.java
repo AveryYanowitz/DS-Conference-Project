@@ -2,7 +2,7 @@ package file_reader;
 
 import java.io.File;
 import java.io.IOException;
-
+import java.io.Serializable;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.Map;
@@ -16,7 +16,7 @@ public class CorpusReader {
     private static SerializableComparator<Word> _wordCompare = new SerializableComparator<>();
     private static SerializableComparator<String> _stringCompare = new SerializableComparator<>();
     
-    public record threeMaps<K, K2, K3, V, V2, V3>(Map<K, V> map1, Map<K2, V2> map2, Map<K3, V3> map3) { }
+    public record threeMaps<K, K2, K3, V, V2, V3>(Map<K, V> map1, Map<K2, V2> map2, Map<K3, V3> map3) implements Serializable { }
     public static threeMaps<Word, String, String, Integer, Set<String>, Set<String>> getWordMaps(String filename) {
         Map<Word, Integer> wordMap = new TreeMap<>(_wordCompare);
         Map<String, Set<String>> afterTags = new TreeMap<>(_stringCompare);
