@@ -59,7 +59,8 @@ public class Tagger {
             List<WordAndBound> wordList = _addClauseContours(rawWords);
             
             // Take each word in wordList in order and use it to update existing timelines
-            Set<List<String>> timelines = new TreeSet<>((x, y) -> x.get(x.size() - 1).compareTo(y.get(y.size() - 1)));
+            Set<List<String>> timelines = newSet();
+            Set<List<String>> updatedTimelines = newSet();
             for (WordAndBound word : wordList) {
                 Boundary wordBound = word.boundary();
                 Set<String> tagsForWord = wordsWithTags.get(word.rawWord());
@@ -67,14 +68,16 @@ public class Tagger {
                     for (List<String> timeline : timelines) {
                         String lastTag = timeline.getLast();
                         Set<String> intersectingTags = _intersectionOf(followingTagsMap.get(lastTag), tagsForWord);
-                        Set<String> validTags = _pruneBoundaries(lastTag, intersectingTags, wordBound, legalBoundaryContours);
-                        timelines.remove(timeline);
+                        Set<String> validTags = _excludeInvalidBoundaries(lastTag, intersectingTags,
+                                                                          wordBound, legalBoundaryContours);
                         for (String tag : validTags) {
                             List<String> newTimeline = new ArrayList<>(timeline);
                             newTimeline.add(tag);
-                            timelines.add(newTimeline);
+                            updatedTimelines.add(newTimeline);
                         }
                     }
+                    timelines = updatedTimelines;
+                    updatedTimelines = newSet();
                     // If no possible timelines are left, we're done
                     if (timelines.size() == 0) {
                         break;
@@ -121,14 +124,14 @@ public class Tagger {
     }
 
     // Goes through the possible tags provided and determines which to consider based on local clause boundaries
-    private static Set<String> _pruneBoundaries (String lastTag, Set<String> possibilities, Boundary wordBound,
+    private static Set<String> _excludeInvalidBoundaries (String lastTag, Set<String> possibilities, Boundary wordBound,
                                                 Map<Boundary, List<Boundary>> legalBoundaryContours) {
         Set<String> prunedPossibilities = new TreeSet<>(possibilities);
         Boundary lastBoundary = Word.getBoundary(lastTag);
         var followingBounds = legalBoundaryContours.get(lastBoundary);
         for (String tag : possibilities) {
             Boundary tagBoundary = Word.getBoundary(tag);
-            if (tagBoundary == wordBound && followingBounds.contains(tagBoundary)) {
+            if (tagBoundary != wordBound || !followingBounds.contains(tagBoundary)) {
                 prunedPossibilities.remove(tag);
             }
         }
@@ -149,6 +152,10 @@ public class Tagger {
             }
         }
         return intersection;
+    }
+
+    private static Set<List<String>> newSet() {
+        return new TreeSet<>((x, y) -> x.get(x.size() - 1).compareTo(y.get(y.size() - 1)));
     }
 
     @SuppressWarnings("resource")
