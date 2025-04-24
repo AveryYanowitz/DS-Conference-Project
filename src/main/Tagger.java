@@ -5,14 +5,11 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.Scanner;
 
 import main.Word.Boundary;
-import file_reader.CorpusReader.threeMaps;
+import file_reader.CorpusReader.twoMaps;
 import file_reader.Serializer;
 
 public class Tagger {
@@ -24,7 +21,7 @@ public class Tagger {
     }    
     public static void main(String[] args) {
         // Timed it 100x; the processing for these lines is ~1 sec on average
-        threeMaps<Word, String, String, Integer, Set<String>, Set<String>> freqTags;
+        twoMaps<Word, String, Integer, Set<String>> freqTags;
 
         try {
             System.out.println(new File(".").getAbsolutePath());
@@ -38,18 +35,17 @@ public class Tagger {
         }
 
         do {
-            System.out.println();
-
             // Get a sentence from a user, take the words, and turn them into WordAndBound records
             String sentence = _getString("Enter a sentence to tag: ");
             String[] rawWords = sentence.split(" ");
             List<WordAndBound> wordList = _addClauseContours(rawWords);
             
-            // Take each word in wordList in order and use it to update existing timelines
+            // Take each word in wordList in order and use it to update the ParseTree
             ParseTree allParses = new ParseTree(freqTags);
             for (WordAndBound word : wordList) {
                 allParses.add(word);
             }
+            System.out.println(allParses);
 
         } while (_getYN("Add another sentence?"));
         System.out.println("Thanks for stopping by!");
@@ -60,6 +56,8 @@ public class Tagger {
         boolean startOfClause = true;
         for (String wordString : rawWords) {
             WordAndBound newWord;
+            // Punctuation marks (other than apostrophes and quotes)
+            // usually mean the start of a new clause.
             if (Utilities.hasNonAlpha(wordString)) {
                 startOfClause = true;
                 newWord = new WordAndBound(Utilities.stripNonAlpha(wordString), Boundary.END);

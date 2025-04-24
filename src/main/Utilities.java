@@ -112,19 +112,6 @@ public class Utilities {
         return legalBoundaryContours;
     } 
 
-
-    public static <T> Set<T> intersection(Set<T> wordSet1, Set<T> wordSet2) {
-        Set<T> intersection = new TreeSet<>();
-        for (T elem1 : wordSet1) {
-            for (T elem2 : wordSet2) {
-                if (elem1.equals(elem2)) {
-                    intersection.add(elem2);
-                }
-            }
-        }
-        return intersection;
-    }
-
     public static String stripNonAlpha(String oldString) {
         StringBuilder sb = new StringBuilder();
         for (char ch : oldString.toCharArray()) {
@@ -147,6 +134,22 @@ public class Utilities {
     // I don't know what to name this
     public static boolean isExpandedAlpha(char ch) {
         return acceptAnyway(ch) || Character.isAlphabetic(ch);
+    }
+
+    // Takes the intersection of two sets; if both elements are word tags, it will
+    // also accept tags that share a part of speech but not a word boundary, because
+    // very rare words caused whole sentences to be rejected otherwise.
+    public static Set<String> intersectionOf(Set<String> set1, Set<String> set2) {
+        Set<String> intersection = new TreeSet<>();
+        for (String elem1 : set1) {
+            for (String elem2 : set2) {
+                if (elem1.equals(elem2)
+                || Word.getPOS(elem1).equals(Word.getPOS(elem2))) {
+                    intersection.add(elem2);
+                }
+            }
+        }
+        return intersection;
     }
 
     private static boolean acceptAnyway(char ch) {

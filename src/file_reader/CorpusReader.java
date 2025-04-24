@@ -16,11 +16,10 @@ public class CorpusReader {
     private static SerializableComparator<Word> _wordCompare = new SerializableComparator<>();
     private static SerializableComparator<String> _stringCompare = new SerializableComparator<>();
     
-    public record threeMaps<K, K2, K3, V, V2, V3>(Map<K, V> map1, Map<K2, V2> map2, Map<K3, V3> map3) implements Serializable { }
-    public static threeMaps<Word, String, String, Integer, Set<String>, Set<String>> getWordMaps(String filename) {
+    public record twoMaps<K, K2, V, V2>(Map<K, V> map1, Map<K2, V2> map2) implements Serializable { }
+    public static twoMaps<Word, String, Integer, Set<String>> getWordMaps(String filename) {
         Map<Word, Integer> wordMap = new TreeMap<>(_wordCompare);
-        Map<String, Set<String>> afterTags = new TreeMap<>(_stringCompare);
-        Map<String, Set<String>> beforeTags = new TreeMap<>(_stringCompare);
+        Map<String, Set<String>> nextTags = new TreeMap<>(_stringCompare);
         try {
             Scanner scanner = new Scanner(new File ("assets",filename));
             String previousTag = null;
@@ -55,8 +54,7 @@ public class CorpusReader {
                     // the value; if the key already exists, add the current tag to its set
                     String currentTag = newWord.getTag();
                     if (previousTag != null) {
-                        Utilities.mergeIntoSet(currentTag, previousTag, beforeTags);
-                        Utilities.mergeIntoSet(previousTag, currentTag, afterTags);
+                        Utilities.mergeIntoSet(previousTag, currentTag, nextTags);
                     }
                     lastWord = newWord;
                     previousTag = currentTag;
@@ -71,7 +69,7 @@ public class CorpusReader {
             System.out.println(e);
             throw new RuntimeException("problem reading file: "+filename);
         }
-        return new threeMaps<>(wordMap, beforeTags, afterTags);
+        return new twoMaps<>(wordMap, nextTags);
     }
 
 }

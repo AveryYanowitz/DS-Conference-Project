@@ -9,52 +9,52 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 
-import file_reader.CorpusReader.threeMaps;
+import file_reader.CorpusReader.twoMaps;
 import main.Tagger.WordAndBound;
 import main.Word.Boundary;
 
 public class ParseTree {
 
     private class WordNode {
-        String data;
+        String tag;
+        WordNode parent;
         List<WordNode> children;
 
-        WordNode(String s) {
+        WordNode(String thisTag, WordNode parent) {
             children = new ArrayList<>();
-            data = s;
+            tag = thisTag;
+            this.parent = parent;
         }
 
         boolean isLeaf() {
             return children.isEmpty();
         }
 
-        void addChild(String s) {
-            children.add(new WordNode(s));
+        int numChildren() {
+            return children.size();
         }
 
-        void addChild(WordNode wnd) {
-            children.add(wnd);
-        }
-        
+        void addChild(String s) {
+            children.add(new WordNode(s, this));
+        }     
     } 
 
     private WordNode _root;
     private Map<String, Set<String>> _wordsWithTags;
-    private Map<String, Set<String>> _legalLastTags;
     private Map<String, Set<String>> _legalNextTags;
     public static Map<Boundary,List<Boundary>> legalBoundaryContours = Utilities.getLegalBoundaryContours();
 
-    ParseTree(threeMaps<Word, String, String, Integer, Set<String>, Set<String>> freqTags) {
-        _root = new WordNode(null);
+    ParseTree(twoMaps<Word, String, Integer, Set<String>> freqTags) {
+        _root = new WordNode(null, null);
         _wordsWithTags = Utilities.extractTags(freqTags.map1());
-        _legalLastTags = freqTags.map2();
-        _legalNextTags = freqTags.map3();
+        _legalNextTags = freqTags.map2();
     }
 
-    private class PostIter implements Iterator<WordNode> {
+    // Iterates over the tree, only returns leaf nodes
+    private class LeafIter implements Iterator<WordNode> {
         Stack<WordNode> stack;
 
-        PostIter() {
+        LeafIter() {
             stack = new Stack<>();
             stack.add(_root);
         }
@@ -80,25 +80,77 @@ public class ParseTree {
             }
         }
     }
-
+    
     public void add(WordAndBound word) {
-        PostIter iter = new PostIter();
+        LeafIter iter = new LeafIter();
+        WordNode current;
         while (iter.hasNext()) {
-            WordNode currentLeaf = iter.next();
-            String lastTag = currentLeaf.data;
-            // The intersection of this word's tags and all the tags that can come after current.data
-            Set<String> validTags = Utilities.intersection(_legalNextTags.get(lastTag), 
-                                                                    _wordsWithTags.get(word.rawWord()));
-            validTags = _excludeInvalidBoundaries(lastTag, validTags, word.boundary());
+            // Increment at the beginning of the loop to
+            // skip the first node, the null _root node.
+            current = iter.next();
+            String lastTag = current.tag;
+            Set<String> validTags = _wordsWithTags.get(word.rawWord());
+            if (lastTag != null) {
+                // The intersection of this word's tags and the tags that can follow most recent tag
+                Set<String> possibleNext = _legalNextTags.get(lastTag);
+                validTags = Utilities.intersectionOf(validTags, possibleNext);
+                validTags = _excludeInvalidBoundaries(lastTag, validTags, word.boundary());
+            } else {
+                validTags.removeIf((tag) -> Word.getBoundary(tag) != Boundary.START);
+            }
+            
+            if (validTags.size() == 0) {
+                prune(current);
+                continue;
+            }
             for (String tag : validTags) {
-                currentLeaf.addChild(tag);
+                current.addChild(tag);
             }
         }
     }
 
-    // Goes through the possible tags provided and determines which to consider based on local clause boundaries
+    public String prune(WordNode leafToPrune) {
+        if (!leafToPrune.isLeaf()) {
+            throw new IllegalArgumentException("Can only prune starting from leaf node");
+        }
+
+        // We only want to remove the unique sentence containing this leaf,
+        // so we traverse upwards until we find where that unique branch ends;
+        // i.e. where the parent has more than one child
+        WordNode current = leafToPrune;
+        WordNode previous = null;
+        while (current.parent != null && current.parent.numChildren() > 1) {
+            previous = current;
+            current = current.parent;
+        }
+        current.children.remove(previous);
+        return leafToPrune.tag;
+    }
+
+    public Set<String> getSentences() {
+        LeafIter iter = new LeafIter();
+        Set<String> allSentences = new TreeSet<>();
+        while (iter.hasNext()) {
+            WordNode word = iter.next();
+            StringBuilder sb = new StringBuilder();
+            while (word.parent != null) {
+                sb.insert(0, " ");
+                sb.insert(0, word.tag);
+                word = word.parent;
+            }
+            allSentences.add(sb.toString());
+        }
+        return allSentences;
+    }
+
+    @Override
+    public String toString() {
+        return getSentences().toString();
+    }
+
+    // Goes through the possible tags provided and determines which to consider, given local clause boundaries
     private static Set<String> _excludeInvalidBoundaries (String lastTag, Set<String> possibilities, 
-                                                            Boundary wordBound) {
+                                                        Boundary wordBound) {
         Set<String> prunedPossibilities = new TreeSet<>(possibilities);
         Boundary lastBoundary = Word.getBoundary(lastTag);
         var followingBounds = legalBoundaryContours.get(lastBoundary);
@@ -110,4 +162,5 @@ public class ParseTree {
         }
         return prunedPossibilities;
     }
+
 }

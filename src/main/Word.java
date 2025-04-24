@@ -38,7 +38,7 @@ public class Word implements Comparable<Word>, Serializable {
     public String getTag() {
         return _tag;
     }
-    public Word.Boundary getBoundary() {
+    public Boundary getBoundary() {
         return getBoundary(_tag);
     }
     public String getPOS() {
@@ -76,15 +76,15 @@ public class Word implements Comparable<Word>, Serializable {
     }
 
     // Returns the "word boundary" chunk of the tag
-    public static Word.Boundary getBoundary(String tag) {
+    public static Boundary getBoundary(String tag) {
         try {
             String boundaryString = tag.split(";")[1];
             if (boundaryString.equals("START")) {
-                return Word.Boundary.START;
+                return Boundary.START;
             } else if (boundaryString.equals("MIDDLE")) {
-                return Word.Boundary.MIDDLE;
+                return Boundary.MIDDLE;
             } else {
-                return Word.Boundary.END;
+                return Boundary.END;
             }
         } catch (ArrayIndexOutOfBoundsException exception) {
             return null; // No boundary found in string
