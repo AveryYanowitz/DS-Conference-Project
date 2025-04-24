@@ -25,13 +25,13 @@ public class Tagger {
 
     public static void main(String[] args) {
         // Timed it 100x; the processing for these lines is ~1 sec on average
-        Map<String, Set<String>> precedingTagsMap = null;
+        // Map<String, Set<String>> precedingTagsMap = null;
         Map<String, Set<String>> followingTagsMap = null;
         Map<String, Set<String>> wordsWithTags = null;
 
         try {
             System.out.println(new File(".").getAbsolutePath());
-            precedingTagsMap = Serializer.importMap(new File("./assets/beforeTags.ser"));
+            // precedingTagsMap = Serializer.importMap(new File("./assets/beforeTags.ser"));
             followingTagsMap = Serializer.importMap(new File("./assets/afterTags.ser"));
             wordsWithTags = Serializer.importMap(new File("./assets/wordsWithTags.ser"));
         } catch (IOException io) {
