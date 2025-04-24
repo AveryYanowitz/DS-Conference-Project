@@ -12,12 +12,12 @@ import main.Word;
 import main.Utilities;
 
 public class CorpusReader {
+    // To save the data, we need a serializable wrapper around the Comparator class
     private static SerializableComparator<Word> _wordCompare = new SerializableComparator<>();
     private static SerializableComparator<String> _stringCompare = new SerializableComparator<>();
     
     public record threeMaps<K, K2, K3, V, V2, V3>(Map<K, V> map1, Map<K2, V2> map2, Map<K3, V3> map3) { }
     public static threeMaps<Word, String, String, Integer, Set<String>, Set<String>> getWordMaps(String filename) {
-        // Sort functions make the maps sorted from A -> Z, not Z -> A
         Map<Word, Integer> wordMap = new TreeMap<>(_wordCompare);
         Map<String, Set<String>> afterTags = new TreeMap<>(_stringCompare);
         Map<String, Set<String>> beforeTags = new TreeMap<>(_stringCompare);
