@@ -16,7 +16,7 @@ import file_reader.Serializer;
 public class Tagger {
     record WordAndBound (String rawWord, Boundary boundary) { 
         public WordAndBound(String rawWord, Boundary boundary) {
-            this.rawWord = Utilities.stripNonAlpha(rawWord.toLowerCase());
+            this.rawWord = StringUtil.stripNonAlpha(rawWord.toLowerCase());
             this.boundary = boundary;
         }
     }
@@ -36,12 +36,12 @@ public class Tagger {
             return;
         }
         
-        if (_getYN("Parse custom sentences?")) {
+        if (StringUtil.getYN("Parse custom sentences?")) {
             do {
                 // Get a sentence from a user, take the words, and turn them into WordAndBound records
-                String sentence = _getString("Enter a sentence to tag: ");
+                String sentence = StringUtil.getString("Enter a sentence to tag: ");
                 _parse(sentence, freqTags);
-            } while (_getYN("Add another sentence?"));
+            } while (StringUtil.getYN("Add another sentence?"));
             System.out.println("Thanks for stopping by!");
         } else {
             Scanner fileScanner;
@@ -58,7 +58,7 @@ public class Tagger {
                 System.out.println("Parsing: '"+sentence+"'");
                 System.out.println();
                 _parse(sentence, freqTags);
-                _getString("Press 'Enter' to continue");
+                StringUtil.getString("Press 'Enter' to continue");
                 System.out.println();
             }
             System.out.println("That's all, folks!");
@@ -101,9 +101,9 @@ public class Tagger {
             WordAndBound newWord;
             // Punctuation marks (other than apostrophes and quotes)
             // usually mean the start of a new clause.
-            if (Utilities.hasNonAlpha(wordString)) {
+            if (StringUtil.hasNonAlpha(wordString)) {
                 startOfClause = true;
-                newWord = new WordAndBound(Utilities.stripNonAlpha(wordString), Boundary.END);
+                newWord = new WordAndBound(StringUtil.stripNonAlpha(wordString), Boundary.END);
             } else if (startOfClause) {
                 startOfClause = false;
                 newWord = new WordAndBound(wordString, Boundary.START);
@@ -118,28 +118,4 @@ public class Tagger {
         wordList.add(new WordAndBound(lastWord.rawWord(), Boundary.END));
         return wordList;
     }
-    
-    @SuppressWarnings("resource")
-    private static String _getString(String prompt) {
-        Scanner reader = new Scanner(System.in);
-        System.out.print(prompt);
-        return reader.nextLine();
-    }
-
-    @SuppressWarnings("resource")
-    private static boolean _getYN(String prompt) {
-        Scanner scanner = new Scanner(System.in);
-        while (true) {
-            System.out.print(prompt+" (Y/N) ");
-            String s = scanner.next();
-            if (s.toLowerCase().equals("y") || s.toLowerCase().equals("yes")) {
-                return true;
-            }
-            if (s.toLowerCase().equals("n") || s.toLowerCase().equals("no")) {
-                return false;
-            }
-            System.out.println("Didn't understand, please try again.");
-        }
-    }
-
 }

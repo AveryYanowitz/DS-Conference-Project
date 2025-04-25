@@ -42,11 +42,11 @@ public class ParseTree {
     private WordNode _root;
     private Map<String, Set<String>> _wordsWithTags;
     private Map<String, Set<String>> _legalNextTags;
-    public static Map<Boundary,List<Boundary>> legalBoundaryContours = Utilities.getLegalBoundaryContours();
+    public static Map<Boundary,List<Boundary>> legalBoundaryContours = MapTools.getLegalBoundaryContours();
 
     ParseTree(twoMaps<Word, String, Integer, Set<String>> freqTags) {
         _root = new WordNode(null, null);
-        _wordsWithTags = Utilities.extractTags(freqTags.map1());
+        _wordsWithTags = MapTools.extractTags(freqTags.map1());
         _legalNextTags = freqTags.map2();
     }
 

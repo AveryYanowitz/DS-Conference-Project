@@ -11,7 +11,7 @@ import java.util.TreeMap;
 
 import main.Word;
 import main.Word.Boundary;
-import main.Utilities;
+import main.MapTools;
 
 public class CorpusReader {
     // To save the data, we need a serializable wrapper around the Comparator class
@@ -22,7 +22,7 @@ public class CorpusReader {
     public static twoMaps<Word, String, Integer, Set<String>> getWordMaps(String filename) {
         Map<Word, Integer> wordMap = new TreeMap<>(_wordCompare);
         Map<String, Set<String>> legalNextTags = new TreeMap<>(_stringCompare);
-        Map<Boundary, List<Boundary>> legalBoundaryContours = Utilities.getLegalBoundaryContours();
+        Map<Boundary, List<Boundary>> legalBoundaryContours = MapTools.getLegalBoundaryContours();
 
         try {
             Scanner scanner = new Scanner(new File ("assets",filename));
@@ -67,7 +67,7 @@ public class CorpusReader {
                         List<Boundary> nextBoundaries = legalBoundaryContours.get(lastBoundary);
                         for (Boundary boundary : nextBoundaries) {
                             String newTag = currentPOS+";"+boundary;
-                            Utilities.mergeIntoSet(lastTag, newTag, legalNextTags);
+                            MapTools.mergeIntoSet(lastTag, newTag, legalNextTags);
                         }
                     }
                     lastWord = newWord;

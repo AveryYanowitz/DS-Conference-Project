@@ -11,7 +11,7 @@ import main.Word.Boundary;
 
 import java.util.TreeMap;
 
-public class Utilities {
+public class MapTools {
 
     public static <K, V> void printMap(Map<K, V> mapToPrint, int numToPrint, boolean backwards) {
         ArrayList<Map.Entry<K, V>> wordList = new ArrayList<>(mapToPrint.entrySet());
@@ -113,34 +113,5 @@ public class Utilities {
         legalBoundaryContours.put(Boundary.MIDDLE, Arrays.asList(nonStart));
         legalBoundaryContours.put(Boundary.END, Arrays.asList(start));
         return legalBoundaryContours;
-    } 
-
-    public static String stripNonAlpha(String oldString) {
-        StringBuilder sb = new StringBuilder();
-        for (char ch : oldString.toCharArray()) {
-            if (isExpandedAlpha(ch)) {
-                sb.append(ch);
-            }
-        }
-        return sb.toString();
-    }
-
-    public static boolean hasNonAlpha(String s) {
-        for (char ch : s.toCharArray()) {
-            if (!Character.isAlphabetic(ch) && !acceptAnyway(ch)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // I don't know what to name this
-    public static boolean isExpandedAlpha(char ch) {
-        return acceptAnyway(ch) || Character.isAlphabetic(ch);
-    }
-
-    private static boolean acceptAnyway(char ch) {
-        return ch == '\'' || ch == '"' || ch == '_';
-    }
-    
+    }    
 }
