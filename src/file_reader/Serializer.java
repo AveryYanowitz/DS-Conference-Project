@@ -15,7 +15,9 @@ public class Serializer {
             out.writeObject(obj);
             out.close();
             fileOut.close();
+            System.out.println();
             System.out.println("Serialized data is saved in "+f);
+            System.out.println();
         } catch (IOException i) {
             i.printStackTrace();
         }

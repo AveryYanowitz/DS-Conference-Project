@@ -91,8 +91,11 @@ public class Utilities {
         return tagMap;
     }
 
-    // I have no idea what to call this function
-    public static <K, V> void mergeIntoSet(K destinationKey, V destinationValue, Map <K, Set<V>> destinationMap) {
+    // Not sure what to call this function, but what it does is: if key exists, 
+    // it adds value to the Set<V> mapped to K; if not, it creates a new set 
+    // around the given value and adds the new key-value mapping to the given map
+    public static <K, V> void mergeIntoSet(K destinationKey, V destinationValue, 
+                                            Map <K, Set<V>> destinationMap) {
         Set<V> vSet = new TreeSet<>();
         vSet.add(destinationValue);
         destinationMap.merge(destinationKey, vSet, (oldSet, newSet) -> {
@@ -134,22 +137,6 @@ public class Utilities {
     // I don't know what to name this
     public static boolean isExpandedAlpha(char ch) {
         return acceptAnyway(ch) || Character.isAlphabetic(ch);
-    }
-
-    // Takes the intersection of two sets; if both elements are word tags, it will
-    // also accept tags that share a part of speech but not a word boundary, because
-    // very rare words caused whole sentences to be rejected otherwise.
-    public static Set<String> intersectionOf(Set<String> set1, Set<String> set2) {
-        Set<String> intersection = new TreeSet<>();
-        for (String elem1 : set1) {
-            for (String elem2 : set2) {
-                if (elem1.equals(elem2)
-                || Word.getPOS(elem1).equals(Word.getPOS(elem2))) {
-                    intersection.add(elem2);
-                }
-            }
-        }
-        return intersection;
     }
 
     private static boolean acceptAnyway(char ch) {

@@ -81,7 +81,8 @@ public class ParseTree {
         }
     }
     
-    public void add(WordAndBound word) {
+    // Adds the word to each current leaf node.
+    public boolean add(WordAndBound word) {
         LeafIter iter = new LeafIter();
         WordNode current;
         while (iter.hasNext()) {
@@ -89,27 +90,47 @@ public class ParseTree {
             // skip the first node, the null _root node.
             current = iter.next();
             String lastTag = current.tag;
-            Set<String> validTags = _wordsWithTags.get(word.rawWord());
+            Set<String> validTags;
+
+            try {
+                validTags = new TreeSet<>(_wordsWithTags.get(word.rawWord()));
+            } catch (NullPointerException e) {
+                // Thrown if the word doesn't exist in _wordsWithTags
+                return false;
+            }
+
             if (lastTag != null) {
-                // The intersection of this word's tags and the tags that can follow most recent tag
                 Set<String> possibleNext = _legalNextTags.get(lastTag);
-                validTags = Utilities.intersectionOf(validTags, possibleNext);
+                validTags.retainAll(possibleNext); 
                 validTags = _excludeInvalidBoundaries(lastTag, validTags, word.boundary());
             } else {
+                // If it's the first word of the sentence, it better be the start of a clause!
                 validTags.removeIf((tag) -> Word.getBoundary(tag) != Boundary.START);
             }
             
             if (validTags.size() == 0) {
-                prune(current);
+                _prune(current);
                 continue;
             }
             for (String tag : validTags) {
                 current.addChild(tag);
             }
         }
+        return true;
     }
 
-    public String prune(WordNode leafToPrune) {
+    // Marks all leaf nodes' boundary field as Boundary.END
+    public void makeLeafNodesEnd() {
+        LeafIter iter = new LeafIter();
+        while (iter.hasNext()) {
+            WordNode current = iter.next();
+            String partOfSpeech = Word.getPOS(current.tag);
+            current.tag = partOfSpeech + ";" + "END";
+        }
+    }
+
+    // Does not work correctly.
+    private String _prune(WordNode leafToPrune) {
         if (!leafToPrune.isLeaf()) {
             throw new IllegalArgumentException("Can only prune starting from leaf node");
         }

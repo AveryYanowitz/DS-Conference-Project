@@ -16,8 +16,12 @@ public class Word implements Comparable<Word>, Serializable {
             throw new IllegalArgumentException("failed to split "+wordWithAnnotation);
         }
         _word = arr[0].toLowerCase();
+        String fullTag = arr[1];
+        // Some tags have extra info after the '-', but it was utterly
+        // unhelpful for this application, so I'm removing it here.
+        String trimmed = fullTag.split("-")[0];
         StringBuilder sb = new StringBuilder();
-        sb.append(arr[1]);
+        sb.append(trimmed);
         sb.append(";");
         sb.append(clauseBoundary);
         _tag = sb.toString();

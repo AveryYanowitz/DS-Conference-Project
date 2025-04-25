@@ -15,7 +15,7 @@ import file_reader.Serializer;
 public class Tagger {
     record WordAndBound (String rawWord, Boundary boundary) { 
         public WordAndBound(String rawWord, Boundary boundary) {
-            this.rawWord = rawWord.toLowerCase();
+            this.rawWord = Utilities.stripNonAlpha(rawWord.toLowerCase());
             this.boundary = boundary;
         }
     }    
@@ -42,10 +42,25 @@ public class Tagger {
             
             // Take each word in wordList in order and use it to update the ParseTree
             ParseTree allParses = new ParseTree(freqTags);
+            boolean successful = true;
             for (WordAndBound word : wordList) {
-                allParses.add(word);
+                if (!allParses.add(word)) { // returns false when word doesn't exist in corpus
+                    System.out.println("Unable to parse -- "+word.rawWord()+" not in dictionary");
+                    successful = false;
+                    break;
+                }
+                if (word.boundary() == Boundary.END) {
+                    allParses.makeLeafNodesEnd();
+                }
             }
-            System.out.println(allParses);
+            if (successful) {                
+                Set<String> allSentences = allParses.getSentences();
+                System.out.println();
+                for (String sen : allSentences) { 
+                    System.out.println(sen); 
+                }
+            }
+            System.out.println();
 
         } while (_getYN("Add another sentence?"));
         System.out.println("Thanks for stopping by!");
