@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 
-import file_reader.CorpusReader.twoMaps;
 import main.Tagger.WordAndBound;
 import main.Word.Boundary;
 
@@ -42,12 +41,12 @@ public class ParseTree {
     private WordNode _root;
     private Map<String, Set<String>> _wordsWithTags;
     private Map<String, Set<String>> _legalNextTags;
-    public static Map<Boundary,List<Boundary>> legalBoundaryContours = MapTools.getLegalBoundaryContours();
+    public static Map<Boundary,List<Boundary>> legalBoundaryContours = MapUtil.getLegalBoundaryContours();
 
-    ParseTree(twoMaps<Word, String, Integer, Set<String>> freqTags) {
+    ParseTree(Map<String, Set<String>> wordsWithTags, Map<String, Set<String>> legalNextTags) {
         _root = new WordNode(null, null);
-        _wordsWithTags = MapTools.extractTags(freqTags.map1());
-        _legalNextTags = freqTags.map2();
+        _wordsWithTags = wordsWithTags;
+        _legalNextTags = legalNextTags;
     }
 
     // Iterates over the tree, only returns leaf nodes

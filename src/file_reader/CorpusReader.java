@@ -11,18 +11,18 @@ import java.util.TreeMap;
 
 import main.Word;
 import main.Word.Boundary;
-import main.MapTools;
+import main.MapUtil;
 
 public class CorpusReader {
     // To save the data, we need a serializable wrapper around the Comparator class
     private static SerializableComparator<Word> _wordCompare = new SerializableComparator<>();
     private static SerializableComparator<String> _stringCompare = new SerializableComparator<>();
     
-    public record twoMaps<K, K2, V, V2>(Map<K, V> map1, Map<K2, V2> map2) implements Serializable { }
-    public static twoMaps<Word, String, Integer, Set<String>> getWordMaps(String filename) {
+    public record TwoMaps<K, K2, V, V2>(Map<K, V> map1, Map<K2, V2> map2) implements Serializable { }
+    public static TwoMaps<String, String, Set<String>, Set<String>> getWordMaps(String filename) {
         Map<Word, Integer> wordMap = new TreeMap<>(_wordCompare);
         Map<String, Set<String>> legalNextTags = new TreeMap<>(_stringCompare);
-        Map<Boundary, List<Boundary>> legalBoundaryContours = MapTools.getLegalBoundaryContours();
+        Map<Boundary, List<Boundary>> legalBoundaryContours = MapUtil.getLegalBoundaryContours();
 
         try {
             Scanner scanner = new Scanner(new File ("assets",filename));
@@ -67,7 +67,7 @@ public class CorpusReader {
                         List<Boundary> nextBoundaries = legalBoundaryContours.get(lastBoundary);
                         for (Boundary boundary : nextBoundaries) {
                             String newTag = currentPOS+";"+boundary;
-                            MapTools.mergeIntoSet(lastTag, newTag, legalNextTags);
+                            MapUtil.mergeIntoSet(lastTag, newTag, legalNextTags);
                         }
                     }
                     lastWord = newWord;
@@ -83,7 +83,8 @@ public class CorpusReader {
             System.out.println(e);
             throw new RuntimeException("problem reading file: "+filename);
         }
-        return new twoMaps<>(wordMap, legalNextTags);
+        Map<String, Set<String>> wordsWithTags = MapUtil.extractTags(wordMap);
+        return new TwoMaps<>(wordsWithTags, legalNextTags);
     }
 
 }

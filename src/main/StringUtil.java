@@ -16,18 +16,24 @@ public class StringUtil {
 
     @SuppressWarnings("resource")
     public static List<String> getList(String prompt, String[] possibilities) {
+        List<String> answerKey = Arrays.asList(possibilities);
         List<String> filteredAnswers = new ArrayList<>();
         do {
             Scanner reader = new Scanner(System.in);
-            System.out.print(prompt + " (Enter as comma-separated list.)");
-            String[] answers = reader.nextLine().split(",");
-            List<String> answerKey = Arrays.asList(possibilities);
+            System.out.println(prompt);
+            System.out.println("Valid answers: "+answerKey);
+            System.out.print("Enter as comma-separated list or type 'ALL': ");
+            String[] answers = reader.nextLine().split(", ");
+            if (answers[0].equals("ALL")) {
+                return answerKey;
+            }
+            
             for (String answer : answers) {
                 if (answerKey.contains(answer)) {
                     filteredAnswers.add(answer);
                 }
             }
-        } while (filteredAnswers.size() == 0);
+        } while (filteredAnswers.size() == 0); // Repeat if no valid tags were given
         return filteredAnswers;
     }
 

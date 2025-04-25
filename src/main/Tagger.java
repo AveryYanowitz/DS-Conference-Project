@@ -6,11 +6,12 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Scanner;
 
 import main.Word.Boundary;
-import file_reader.CorpusReader.twoMaps;
+import file_reader.CorpusReader.TwoMaps;
 import file_reader.Serializer;
 
 public class Tagger {
@@ -22,11 +23,10 @@ public class Tagger {
     }
     @SuppressWarnings("resource")
     public static void main(String[] args) {
-        // Timed it 100x; the processing for these lines is ~1 sec on average
-        twoMaps<Word, String, Integer, Set<String>> freqTags;
-
+        TwoMaps<String, String, Set<String>, Set<String>> freqTags;
+        List<String> tagsToKeep;
         try {
-            System.out.println(new File(".").getAbsolutePath());
+            tagsToKeep = _getTags("./assets/all_tags.txt");
             freqTags = Serializer.importObject(new File("./assets/maps.ser"));
         } catch (IOException io) {
             io.printStackTrace();
@@ -35,12 +35,19 @@ public class Tagger {
             cnf.printStackTrace();
             return;
         }
+
+        Map<String, Set<String>> wordsWithTags = freqTags.map1();
+        MapUtil.filterValues(wordsWithTags, tagsToKeep);
         
+        Map<String, Set<String>> legalNextTags = freqTags.map2();
+        MapUtil.filterKeys(legalNextTags, tagsToKeep);
+        MapUtil.filterValues(legalNextTags, tagsToKeep);
+
         if (StringUtil.getYN("Parse custom sentences?")) {
             do {
                 // Get a sentence from a user, take the words, and turn them into WordAndBound records
                 String sentence = StringUtil.getString("Enter a sentence to tag: ");
-                _parse(sentence, freqTags);
+                _parse(sentence, wordsWithTags, legalNextTags);
             } while (StringUtil.getYN("Add another sentence?"));
             System.out.println("Thanks for stopping by!");
         } else {
@@ -56,8 +63,7 @@ public class Tagger {
             while (fileScanner.hasNext()) {
                 String sentence = fileScanner.nextLine();
                 System.out.println("Parsing: '"+sentence+"'");
-                System.out.println();
-                _parse(sentence, freqTags);
+                _parse(sentence, wordsWithTags, legalNextTags);
                 StringUtil.getString("Press 'Enter' to continue");
                 System.out.println();
             }
@@ -66,12 +72,12 @@ public class Tagger {
         
     }
 
-    private static ParseTree _parse(String sentence, twoMaps<Word, String, Integer, Set<String>> freqTags) {
+    private static ParseTree _parse(String sentence, Map<String, Set<String>> wordsWithTags, Map<String, Set<String>> legalNextTags) {
         String[] rawWords = sentence.split(" ");
         List<WordAndBound> wordList = _addClauseContours(rawWords);
         
         // Take each word in wordList in order and use it to update the ParseTree
-        ParseTree allParses = new ParseTree(freqTags);
+        ParseTree allParses = new ParseTree(wordsWithTags, legalNextTags);
         boolean successful = true;
         for (WordAndBound word : wordList) {
             if (!allParses.add(word)) { // returns false when word doesn't exist in corpus
@@ -86,8 +92,8 @@ public class Tagger {
         if (successful) {                
             Set<String> allSentences = allParses.getSentences();
             System.out.println();
-            for (String sen : allSentences) { 
-                System.out.println(sen); 
+            for (String possibleSentence : allSentences) { 
+                System.out.println(possibleSentence);
             }
         }
         System.out.println();
@@ -118,4 +124,19 @@ public class Tagger {
         wordList.add(new WordAndBound(lastWord.rawWord(), Boundary.END));
         return wordList;
     }
+
+    private static List<String> _getTags(String pathname) throws FileNotFoundException {
+        String[] tagOptions = new String[35];
+        Scanner scanner = new Scanner(new File(pathname));
+        int index = 0;
+        while (scanner.hasNextLine()) {
+            tagOptions[index] = scanner.nextLine();
+            index++;
+        }
+        scanner.close();
+        
+        List<String> tagsToKeep = StringUtil.getList("Which tags do you want to include?", tagOptions);
+        return tagsToKeep;
+    }
+
 }
