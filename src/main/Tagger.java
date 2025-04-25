@@ -1,6 +1,7 @@
 package main;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import java.util.ArrayList;
@@ -18,7 +19,8 @@ public class Tagger {
             this.rawWord = Utilities.stripNonAlpha(rawWord.toLowerCase());
             this.boundary = boundary;
         }
-    }    
+    }
+    @SuppressWarnings("resource")
     public static void main(String[] args) {
         // Timed it 100x; the processing for these lines is ~1 sec on average
         twoMaps<Word, String, Integer, Set<String>> freqTags;
@@ -33,37 +35,63 @@ public class Tagger {
             cnf.printStackTrace();
             return;
         }
+        
+        if (_getYN("Parse custom sentences?")) {
+            do {
+                // Get a sentence from a user, take the words, and turn them into WordAndBound records
+                String sentence = _getString("Enter a sentence to tag: ");
+                _parse(sentence, freqTags);
+            } while (_getYN("Add another sentence?"));
+            System.out.println("Thanks for stopping by!");
+        } else {
+            Scanner fileScanner;
 
-        do {
-            // Get a sentence from a user, take the words, and turn them into WordAndBound records
-            String sentence = _getString("Enter a sentence to tag: ");
-            String[] rawWords = sentence.split(" ");
-            List<WordAndBound> wordList = _addClauseContours(rawWords);
-            
-            // Take each word in wordList in order and use it to update the ParseTree
-            ParseTree allParses = new ParseTree(freqTags);
-            boolean successful = true;
-            for (WordAndBound word : wordList) {
-                if (!allParses.add(word)) { // returns false when word doesn't exist in corpus
-                    System.out.println("Unable to parse -- "+word.rawWord()+" not in dictionary");
-                    successful = false;
-                    break;
-                }
-                if (word.boundary() == Boundary.END) {
-                    allParses.makeLeafNodesEnd();
-                }
+            try {
+                fileScanner = new Scanner(new File("./assets/test_sentences.txt"));
+            } catch (FileNotFoundException e) {
+                System.out.println("ERROR: File not found.");
+                return;
             }
-            if (successful) {                
-                Set<String> allSentences = allParses.getSentences();
+
+            while (fileScanner.hasNext()) {
+                String sentence = fileScanner.nextLine();
+                System.out.println("Parsing: '"+sentence+"'");
                 System.out.println();
-                for (String sen : allSentences) { 
-                    System.out.println(sen); 
-                }
+                _parse(sentence, freqTags);
+                _getString("Press 'Enter' to continue");
+                System.out.println();
             }
-            System.out.println();
+            System.out.println("That's all, folks!");
+        }
+        
+    }
 
-        } while (_getYN("Add another sentence?"));
-        System.out.println("Thanks for stopping by!");
+    private static ParseTree _parse(String sentence, twoMaps<Word, String, Integer, Set<String>> freqTags) {
+        String[] rawWords = sentence.split(" ");
+        List<WordAndBound> wordList = _addClauseContours(rawWords);
+        
+        // Take each word in wordList in order and use it to update the ParseTree
+        ParseTree allParses = new ParseTree(freqTags);
+        boolean successful = true;
+        for (WordAndBound word : wordList) {
+            if (!allParses.add(word)) { // returns false when word doesn't exist in corpus
+                System.out.println("Unable to parse sentence " + sentence + ":\n"+word.rawWord()+" not in dictionary");
+                successful = false;
+                break;
+            }
+            if (word.boundary() == Boundary.END) {
+                allParses.makeLeafNodesEnd();
+            }
+        }
+        if (successful) {                
+            Set<String> allSentences = allParses.getSentences();
+            System.out.println();
+            for (String sen : allSentences) { 
+                System.out.println(sen); 
+            }
+        }
+        System.out.println();
+        return allParses;
     }
 
     private static List<WordAndBound> _addClauseContours(String[] rawWords) {        
