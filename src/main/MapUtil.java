@@ -139,7 +139,7 @@ public class MapUtil {
                 return !filterSet.contains(shortTag);
             });
         }
-        
+
         // Any sets that are now empty should be removed
         // to avoid NullPointerExceptions later
         mapEntries.removeIf((var entry) -> {

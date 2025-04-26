@@ -30,10 +30,15 @@ public class Word implements Comparable<Word>, Serializable {
     public Word(String word, String tag, Boundary clauseBoundary) {
         _word = word;
         StringBuilder sb = new StringBuilder();
-        sb.append(getPOS(tag)); // Remove the boundary from it
+        sb.append(getPOS(tag)); // Remove the boundary from it if present
         sb.append(";");
         sb.append(clauseBoundary);
         _tag = sb.toString();
+    }
+
+    public Word(String word, String tagWithBoundary) {
+        _word = word;
+        _tag = tagWithBoundary;
     }
 
     public String getWord() {

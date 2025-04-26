@@ -24,10 +24,10 @@ public class StringUtil {
             System.out.println("Valid answers: "+answerKey);
             System.out.print("Enter as comma-separated list or type 'ALL': ");
             String[] answers = reader.nextLine().split(", ");
-            if (answers[0].equals("ALL")) {
+            if (answers[0].toLowerCase().equals("all")) {
                 return answerKey;
             }
-            
+
             for (String answer : answers) {
                 if (answerKey.contains(answer)) {
                     filteredAnswers.add(answer);

@@ -38,7 +38,7 @@ public class Tagger {
 
         Map<String, Set<String>> wordsWithTags = freqTags.map1();
         MapUtil.filterValues(wordsWithTags, tagsToKeep);
-        
+
         Map<String, Set<String>> legalNextTags = freqTags.map2();
         MapUtil.filterKeys(legalNextTags, tagsToKeep);
         MapUtil.filterValues(legalNextTags, tagsToKeep);
@@ -90,11 +90,7 @@ public class Tagger {
             }
         }
         if (successful) {                
-            Set<String> allSentences = allParses.getSentences();
-            System.out.println();
-            for (String possibleSentence : allSentences) { 
-                System.out.println(possibleSentence);
-            }
+            System.out.println(allParses.toString());
         }
         System.out.println();
         return allParses;

@@ -15,14 +15,26 @@ import main.Word.Boundary;
 public class ParseTree {
 
     private class WordNode {
-        String tag;
+        Word word;
         WordNode parent;
         List<WordNode> children;
 
-        WordNode(String thisTag, WordNode parent) {
+        WordNode(String rawWord, String thisTag, WordNode parent) {
             children = new ArrayList<>();
-            tag = thisTag;
+            word = new Word(rawWord, thisTag);
             this.parent = parent;
+        }
+
+        String getWord() {
+            return word.getWord();
+        }
+
+        String getTag() {
+            return word.getTag();
+        }
+
+        void setTag(String newTag) {
+            word = new Word(word.getWord(), newTag);
         }
 
         boolean isLeaf() {
@@ -33,8 +45,8 @@ public class ParseTree {
             return children.size();
         }
 
-        void addChild(String s) {
-            children.add(new WordNode(s, this));
+        void addChild(String rawWord, String tag) {
+            children.add(new WordNode(rawWord, tag, this));
         }     
     } 
 
@@ -44,7 +56,9 @@ public class ParseTree {
     public static Map<Boundary,List<Boundary>> legalBoundaryContours = MapUtil.getLegalBoundaryContours();
 
     ParseTree(Map<String, Set<String>> wordsWithTags, Map<String, Set<String>> legalNextTags) {
-        _root = new WordNode(null, null);
+        // Since the first word could have multiple parsings, the root node
+        // has to be a null placeholder node instead
+        _root = new WordNode(null, null,null);
         _wordsWithTags = wordsWithTags;
         _legalNextTags = legalNextTags;
     }
@@ -88,7 +102,7 @@ public class ParseTree {
             // Increment at the beginning of the loop to
             // skip the first node, the null _root node.
             current = iter.next();
-            String lastTag = current.tag;
+            String lastTag = current.getTag();
             Set<String> validTags;
 
             try {
@@ -108,11 +122,13 @@ public class ParseTree {
             }
             
             if (validTags.size() == 0) {
-                _prune(current);
+                _prune(current.parent, current);
                 continue;
             }
+
+            String rawWord = word.rawWord();
             for (String tag : validTags) {
-                current.addChild(tag);
+                current.addChild(rawWord, tag);
             }
         }
         return true;
@@ -123,28 +139,9 @@ public class ParseTree {
         LeafIter iter = new LeafIter();
         while (iter.hasNext()) {
             WordNode current = iter.next();
-            String partOfSpeech = Word.getPOS(current.tag);
-            current.tag = partOfSpeech + ";" + "END";
+            String partOfSpeech = Word.getPOS(current.getTag());
+            current.setTag(partOfSpeech + ";" + "END");
         }
-    }
-
-    // Does not work correctly.
-    private String _prune(WordNode leafToPrune) {
-        if (!leafToPrune.isLeaf()) {
-            throw new IllegalArgumentException("Can only prune starting from leaf node");
-        }
-
-        // We only want to remove the unique sentence containing this leaf,
-        // so we traverse upwards until we find where that unique branch ends;
-        // i.e. where the parent has more than one child
-        WordNode current = leafToPrune;
-        WordNode previous = null;
-        while (current.parent != null && current.parent.numChildren() > 1) {
-            previous = current;
-            current = current.parent;
-        }
-        current.children.remove(previous);
-        return leafToPrune.tag;
     }
 
     public Set<String> getSentences() {
@@ -155,7 +152,7 @@ public class ParseTree {
             StringBuilder sb = new StringBuilder();
             while (word.parent != null) {
                 sb.insert(0, " ");
-                sb.insert(0, word.tag);
+                sb.insert(0, word.getTag());
                 word = word.parent;
             }
             allSentences.add(sb.toString());
@@ -165,7 +162,39 @@ public class ParseTree {
 
     @Override
     public String toString() {
-        return getSentences().toString();
+        Set<String> sentences = getSentences();
+        StringBuilder sb = new StringBuilder();
+        for (String sentence : sentences) {
+            sb.append(sentence);
+            sb.append("\n");
+        }
+        sb.append(_getWords());
+        return sb.toString();
+    }
+
+    // Does not work correctly.
+    private void _prune(WordNode evilParent, WordNode problemChild) {
+        // We only want to remove the unique sentence containing this leaf,
+        // so we traverse upwards until we find where that unique branch ends;
+        // i.e. where the parent has more than one child, or where its parent
+        // is the placeholder node _root
+        if (evilParent.numChildren() > 1 || evilParent.parent == _root) {
+            evilParent.children.remove(problemChild);
+        } else {
+            _prune(evilParent.parent, evilParent);
+        }
+
+    }
+
+    private String _getWords() {
+        StringBuilder sb = new StringBuilder();
+        WordNode current = _root;
+        while (!current.isLeaf()) {
+            current = current.children.get(0); // Do this first because _root isn't printable
+            sb.append(current.getWord());
+            sb.append(" ");
+        }
+        return sb.toString();
     }
 
     // Goes through the possible tags provided and determines which to consider, given local clause boundaries
