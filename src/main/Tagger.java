@@ -80,8 +80,11 @@ public class Tagger {
         ParseTree allParses = new ParseTree(wordsWithTags, legalNextTags);
         boolean successful = true;
         for (WordAndBound word : wordList) {
-            if (!allParses.add(word)) { // returns false when word doesn't exist in corpus
-                System.out.println("Unable to parse sentence " + sentence + ":\n"+word.rawWord()+" not in dictionary");
+            try {
+                allParses.add(word);
+            } catch (IllegalArgumentException error) {                
+                System.out.println("Unable to parse sentence '" + sentence+"'");
+                System.out.println(error.getMessage());
                 successful = false;
                 break;
             }

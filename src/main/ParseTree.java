@@ -95,7 +95,7 @@ public class ParseTree {
     }
     
     // Adds the word to each current leaf node.
-    public boolean add(WordAndBound word) {
+    public void add(WordAndBound word) throws IllegalArgumentException {
         LeafIter iter = new LeafIter();
         WordNode current;
         while (iter.hasNext()) {
@@ -109,7 +109,7 @@ public class ParseTree {
                 validTags = new TreeSet<>(_wordsWithTags.get(word.rawWord()));
             } catch (NullPointerException e) {
                 // Thrown if the word doesn't exist in _wordsWithTags
-                return false;
+                throw new IllegalArgumentException("No legal tags left for word "+word.rawWord());
             }
 
             if (lastTag != null) {
@@ -122,7 +122,11 @@ public class ParseTree {
             }
             
             if (validTags.size() == 0) {
-                _prune(current.parent, current);
+                try {
+                    _prune(current.parent, current);
+                } catch (NullPointerException e) {
+                    throw new IllegalArgumentException("No legal sentences possible");
+                }
                 continue;
             }
 
@@ -131,7 +135,6 @@ public class ParseTree {
                 current.addChild(rawWord, tag);
             }
         }
-        return true;
     }
 
     // Marks all leaf nodes' boundary field as Boundary.END
