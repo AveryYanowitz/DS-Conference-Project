@@ -9,8 +9,9 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 
+import file_reader.Word;
+import file_reader.Word.Boundary;
 import main.Tagger.WordAndBound;
-import main.Word.Boundary;
 
 public class ParseTree {
 

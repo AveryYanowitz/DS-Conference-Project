@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Scanner;
 
-import main.Word.Boundary;
-import file_reader.CorpusReader.TwoMaps;
+import file_reader.CorpusProcessor.TwoMaps;
+import file_reader.Word.Boundary;
 import file_reader.Serializer;
 
 public class Tagger {

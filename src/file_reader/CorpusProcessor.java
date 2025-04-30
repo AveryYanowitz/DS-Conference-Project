@@ -9,11 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import main.Word;
-import main.Word.Boundary;
+import file_reader.Word.Boundary;
 import main.MapUtil;
 
-public class CorpusReader {
+public class CorpusProcessor {
     // To save the data, we need a serializable wrapper around the Comparator class
     private static SerializableComparator<Word> _wordCompare = new SerializableComparator<>();
     private static SerializableComparator<String> _stringCompare = new SerializableComparator<>();

@@ -7,7 +7,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import main.Word.Boundary;
+import file_reader.Word;
+import file_reader.Word.Boundary;
 
 import java.util.TreeMap;
 

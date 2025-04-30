@@ -24,7 +24,7 @@ public class Serializer {
     }
 
     public static void main(String args[]) {
-        var twoMaps = CorpusReader.getWordMaps("brown_tag.txt");
+        var twoMaps = CorpusProcessor.getWordMaps("brown_tag.txt");
         exportObject(twoMaps, new File("./assets/maps.ser"));
     }
 
