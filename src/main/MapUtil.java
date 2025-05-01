@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 
-import file_reader.Word;
 import file_reader.Word.Boundary;
 
 import java.util.TreeMap;
@@ -50,48 +50,6 @@ public class MapUtil {
         }
     }
 
-    // Takes a map of <K, V> and returns the equivalent map of <V, Set<K>>, where
-    // repeat Vs in the original map have their Ks added to Set<K>
-    public static <K,V> Map<V, Set<K>> invertMap(Map <K, V> mapToInvert) {
-        Set<K> keySet = mapToInvert.keySet();
-        Map<V, Set<K>> inverseMap = new TreeMap<>();
-        for (K key : keySet) {
-            mergeIntoSet(mapToInvert.get(key), key, inverseMap);
-        }
-        return inverseMap;
-    }
-
-    // Rounds all values to their nearest power of ten (thousands to the nearest thousand,
-    // hundreds to the nearest hundred, etc.) ***Way too complicated, I can probably use logs
-    // and modulo to make it simpler later.***
-    public static <V> Map<Integer, Set<V>> roundMap(Map<Integer, Set<V>> mapToRound) {
-        Map<Integer, Set<V>> roundedMap = new TreeMap<>();
-        Set<Integer> allKeys = mapToRound.keySet();
-        for (Integer key : allKeys) {
-            Set<V> val = mapToRound.get(key);
-            int leftmost = key;
-            while (leftmost > 9) {
-                leftmost /= 10;
-            }
-            int magnitude = (int) Math.pow(10, (int) Math.log10(key));
-            int roundedKey = leftmost * magnitude;
-            roundedMap.merge(roundedKey, val, (oldSet, newSet) -> {
-                        oldSet.addAll(newSet);
-                        return oldSet;
-                    });
-        }
-        return roundedMap;
-    }
-
-    public static Map<String, Set<String>> extractTags(Map <Word, Integer> extractMap) {
-        Map<String, Set<String>> tagMap = new TreeMap<>();
-        Set<Word> keySet = extractMap.keySet();
-        for (Word key : keySet) {
-            mergeIntoSet(key.getWord(), key.getTag(), tagMap);
-        }
-        return tagMap;
-    }
-
     // Not sure what to call this function, but what it does is: if key exists, 
     // it adds value to the Set<V> mapped to K; if not, it creates a new set 
     // around the given value and adds the new key-value mapping to the given map
@@ -130,14 +88,12 @@ public class MapUtil {
     }
 
     // Removes all elements not found in toKeep from each set
-    public static <K> void filterValues(Map<K, Set<String>> mapToFilter, List<String> toKeep) {
-        Set<Map.Entry<K, Set<String>>> mapEntries = mapToFilter.entrySet();
-        Set<String> filterSet = new TreeSet<>(toKeep); // TreeSet because lots of searching
+    public static <K, V> void filterValues(Map<K, Set<V>> mapToFilter, Predicate<V> filterFunc) {
+        var mapEntries = mapToFilter.entrySet();
         for (var entry : mapEntries) {
-            Set<String> value = entry.getValue();
-            value.removeIf((var tag) -> {
-                String shortTag = tag.substring(0,2);
-                return !filterSet.contains(shortTag);
+            Set<V> value = entry.getValue();
+            value.removeIf((var tagPair) -> {
+                return filterFunc.test(tagPair);
             });
         }
 

@@ -5,21 +5,28 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import file_reader.Word.Boundary;
 import main.MapUtil;
 
 public class CorpusProcessor {
     // To save the data, we need a serializable wrapper around the Comparator class
-    private static SerializableComparator<Word> _wordCompare = new SerializableComparator<>();
+    public static final class SerializableComparator<T extends Comparable<T>> implements Comparator<T>, Serializable {
+        @Override
+        public int compare(T o1, T o2) {
+            return o1.compareTo(o2);
+        }
+    }
+
     private static SerializableComparator<String> _stringCompare = new SerializableComparator<>();
     
-    public record TwoMaps<K, K2, V, V2>(Map<K, V> map1, Map<K2, V2> map2) implements Serializable { }
-    public static TwoMaps<String, String, Set<String>, Set<String>> getWordMaps(String filename) {
-        Map<Word, Integer> wordMap = new TreeMap<>(_wordCompare);
+    public static Pair<Map<String, Set<Pair<String, Integer>>>, Map<String, Set<String>>> getWordMaps(String filename) {
+        Map<String, Set<Pair<String, Integer>>> wordsToTagFreqs = new TreeMap<>(_stringCompare);
         Map<String, Set<String>> legalNextTags = new TreeMap<>(_stringCompare);
         Map<Boundary, List<Boundary>> legalBoundaryContours = MapUtil.getLegalBoundaryContours();
 
@@ -29,51 +36,92 @@ public class CorpusProcessor {
             Word lastWord = null;
             boolean atClauseStart = false;
             while (scanner.hasNext()) {
-                String nextWord = scanner.next();
-                final Word newWord;
+                String fullWordString = scanner.next();
+                Word thisWord;
                 try {
                     // Ignore foreign words
-                    if (nextWord.contains("_FW")) {
+                    if (fullWordString.contains("_FW")) {
                         continue;
                     }
                     // If the "word" is a punctuation mark, 
                     // its first character won't be alphabetic
-                    if (!Character.isAlphabetic(nextWord.charAt(0))) {
+                    if (!Character.isAlphabetic(fullWordString.charAt(0))) {
                         atClauseStart = true;
                         if (lastWord == null) {
                             continue;
                         }
-                        // the last word was actually an instance of Boundary.END,
-                        // so we have to decrement its count in wordMap accordingly
-                        int previousFreq = wordMap.get(lastWord);
-                        wordMap.put(lastWord, previousFreq - 1);
+                        // the last word was actually an instance of Boundary.END, so
+                        // we have to decrement its count in wordsToTagFreqs accordingly
+                        Set<Pair<String, Integer>> tags = wordsToTagFreqs.get(lastWord.getWord());
+                        Pair<String, Integer> tagToRemove = null;
+                        for (var tag : tags) {
+                            if (tag.first().equals(lastTag)) {
+                                tagToRemove = tag;
+                                break;
+                            }
+                        }
+
+                        if (tagToRemove != null) {
+                            int freq = tagToRemove.second();
+                            tags.remove(tagToRemove);
+                            tags.add(tagToRemove.replaceSecond(freq - 1));
+                        }
 
                         // Then we want to add it again, but with the END boundary
-                        newWord = new Word(lastWord.getWord(), lastWord.getTag(), Word.Boundary.END);
+                        thisWord = new Word(lastWord.getWord(), lastWord.getTag(), Word.Boundary.END);
                     } else {
-                        newWord = atClauseStart ? new Word(nextWord, Word.Boundary.START) 
-                                                : new Word(nextWord, Word.Boundary.MIDDLE);
+                        thisWord = atClauseStart ? new Word(fullWordString, Word.Boundary.START)
+                                                : new Word(fullWordString, Word.Boundary.MIDDLE);
                         atClauseStart = false;
                     }
-                    wordMap.merge(newWord, 1, (current, given) -> current + 1);
+
+                    Pair<String, Integer> pair = new Pair<>(thisWord.getTag(), 1);
+                    Set<Pair<String, Integer>> set = new TreeSet<>();
+                    set.add(pair);
+                    wordsToTagFreqs.merge(thisWord.getWord(), set, (existingSet, newSet) -> {
+                        // Look to see if this tag already exists
+                        Pair<String, Integer> sameTag = null;
+                        for (var tagPair : existingSet) {
+                            if (tagPair.first().equals(thisWord.getTag())) {
+                                sameTag = tagPair;
+                                break;
+                            }
+                        }
+                        if (sameTag != null) {
+                            // If so, increment its size
+                            existingSet.remove(sameTag);
+                            int freq = sameTag.second() + 1;
+                            existingSet.add(sameTag.replaceSecond(freq));
+                        } else {
+                            // Otherwise, add it in
+                            sameTag = new Pair<>(thisWord.getTag(), 1);
+                            existingSet.add(sameTag);
+                        }
+                        return existingSet;
+                    });
                     
                     // Reformats the tag to include all possible boundaries, given the previous tag's boundary mark.
                     // Otherwise, some rarer words caused whole sentences to be rejected incorrectly.
-                    String currentTag = newWord.getTag();
+                    String currentTag = thisWord.getTag();
                     if (lastTag != null) {
                         Boundary lastBoundary = Word.getBoundary(lastTag);
                         String currentPOS = Word.getPOS(currentTag);
                         List<Boundary> nextBoundaries = legalBoundaryContours.get(lastBoundary);
                         for (Boundary boundary : nextBoundaries) {
                             String newTag = currentPOS+";"+boundary;
-                            MapUtil.mergeIntoSet(lastTag, newTag, legalNextTags);
+                            Set<String> vSet = new TreeSet<>();
+                            vSet.add(newTag);
+                            legalNextTags.merge(lastTag, vSet, (oldSet, newSet) -> {
+                                oldSet.addAll(newSet);
+                                return oldSet;
+                            });
                         }
                     }
-                    lastWord = newWord;
+                    lastWord = thisWord;
                     lastTag = currentTag;
                     
                 } catch (IllegalArgumentException e) {
-                    System.out.println("Couldn't read token '"+nextWord+"'");
+                    System.out.println("Couldn't read token '"+fullWordString+"'");
                     System.out.println();
                 }
             }
@@ -82,8 +130,22 @@ public class CorpusProcessor {
             System.out.println(e);
             throw new RuntimeException("problem reading file: "+filename);
         }
-        Map<String, Set<String>> wordsWithTags = MapUtil.extractTags(wordMap);
-        return new TwoMaps<>(wordsWithTags, legalNextTags);
+        
+        // System.out.println(_totalWords(wordsToTagFreqs));
+
+        return new Pair<>(wordsToTagFreqs, legalNextTags);
+    }
+
+    @SuppressWarnings("unused")
+    // See commented-out line above; leaving this in here for transparency of how I got ParseTree.TOTAL_WORDS
+    private static int _totalWords(Map<String, Set<Pair<String, Integer>>> wordsToTagFreqs) {
+        int total = 0;
+        for (var tagSet : wordsToTagFreqs.values()) {
+            for (Pair<String,Integer> pair : tagSet) {
+                total += pair.second();
+            }
+        }
+        return total;
     }
 
 }

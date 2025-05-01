@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Scanner;
 
-import file_reader.CorpusProcessor.TwoMaps;
 import file_reader.Word.Boundary;
+import file_reader.Pair;
 import file_reader.Serializer;
 
 public class Tagger {
@@ -23,7 +23,8 @@ public class Tagger {
     }
     @SuppressWarnings("resource")
     public static void main(String[] args) {
-        TwoMaps<String, String, Set<String>, Set<String>> freqTags;
+        Pair<Map<String, Set<Pair<String, Integer>>>,
+            Map<String, Set<String>>> freqTags;
         List<String> tagsToKeep;
         try {
             tagsToKeep = _getTags("./assets/all_tags.txt");
@@ -36,18 +37,25 @@ public class Tagger {
             return;
         }
 
-        Map<String, Set<String>> wordsWithTags = freqTags.map1();
-        MapUtil.filterValues(wordsWithTags, tagsToKeep);
+        var wordsToTagFreqs = freqTags.first();
+        MapUtil.filterValues(wordsToTagFreqs, (var tagPair) -> {
+            String fullTag = tagPair.first();
+            String shortTag = fullTag.substring(0,2);
+            return !tagsToKeep.contains(shortTag);
+        });
 
-        Map<String, Set<String>> legalNextTags = freqTags.map2();
+        Map<String, Set<String>> legalNextTags = freqTags.second();
         MapUtil.filterKeys(legalNextTags, tagsToKeep);
-        MapUtil.filterValues(legalNextTags, tagsToKeep);
+        MapUtil.filterValues(legalNextTags, (var nextTag) -> {
+            String shortTag = nextTag.substring(0, 2);
+            return !tagsToKeep.contains(shortTag);
+        });
 
         if (StringUtil.getYN("Parse custom sentences?")) {
             do {
                 // Get a sentence from a user, take the words, and turn them into WordAndBound records
                 String sentence = StringUtil.getString("Enter a sentence to tag: ");
-                _parse(sentence, wordsWithTags, legalNextTags);
+                _parse(sentence, wordsToTagFreqs, legalNextTags);
             } while (StringUtil.getYN("Add another sentence?"));
             System.out.println("Thanks for stopping by!");
         } else {
@@ -63,7 +71,7 @@ public class Tagger {
             while (fileScanner.hasNext()) {
                 String sentence = fileScanner.nextLine();
                 System.out.println("Parsing: '"+sentence+"'");
-                _parse(sentence, wordsWithTags, legalNextTags);
+                _parse(sentence, wordsToTagFreqs, legalNextTags);
                 StringUtil.getString("Press 'Enter' to continue");
                 System.out.println();
             }
@@ -72,12 +80,12 @@ public class Tagger {
         
     }
 
-    private static ParseTree _parse(String sentence, Map<String, Set<String>> wordsWithTags, Map<String, Set<String>> legalNextTags) {
+    private static ParseTree _parse(String sentence, Map<String, Set<Pair<String, Integer>>> wordsToTagFreqs, Map<String, Set<String>> legalNextTags) {
         String[] rawWords = sentence.split(" ");
         List<WordAndBound> wordList = _addClauseContours(rawWords);
         
         // Take each word in wordList in order and use it to update the ParseTree
-        ParseTree allParses = new ParseTree(wordsWithTags, legalNextTags);
+        ParseTree allParses = new ParseTree(wordsToTagFreqs, legalNextTags);
         boolean successful = true;
         for (WordAndBound word : wordList) {
             try {

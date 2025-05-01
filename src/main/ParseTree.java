@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 
+import file_reader.Pair;
 import file_reader.Word;
 import file_reader.Word.Boundary;
 import main.Tagger.WordAndBound;
@@ -19,11 +20,17 @@ public class ParseTree {
         Word word;
         WordNode parent;
         List<WordNode> children;
+        double probability;
 
-        WordNode(String rawWord, String thisTag, WordNode parent) {
+        WordNode(String rawWord, String thisTag, WordNode parent, int frequency) {
             children = new ArrayList<>();
             word = new Word(rawWord, thisTag);
             this.parent = parent;
+            if (parent == null) {
+                probability = 1;
+            } else {
+                probability = parent.probability * (frequency / TOTAL_WORDS);
+            }
         }
 
         String getWord() {
@@ -46,21 +53,23 @@ public class ParseTree {
             return children.size();
         }
 
-        void addChild(String rawWord, String tag) {
-            children.add(new WordNode(rawWord, tag, this));
+        void addChild(String rawWord, String tag, int frequency) {
+            children.add(new WordNode(rawWord, tag, this, frequency));
         }     
     } 
 
     private WordNode _root;
-    private Map<String, Set<String>> _wordsWithTags;
+    private Map<String, Set<Pair<String, Integer>>> _wordsToTagFreqs;
     private Map<String, Set<String>> _legalNextTags;
-    public static Map<Boundary,List<Boundary>> legalBoundaryContours = MapUtil.getLegalBoundaryContours();
+    private static Map<Boundary,List<Boundary>> _legalBoundaryContours = MapUtil.getLegalBoundaryContours();
+    private static int TOTAL_WORDS = 1003581; // see unused method _totalWords in CorpusProcessor
 
-    ParseTree(Map<String, Set<String>> wordsWithTags, Map<String, Set<String>> legalNextTags) {
+    ParseTree(Map<String, Set<Pair<String,Integer>>> wordsToTagFreqs,
+              Map<String, Set<String>> legalNextTags) {
         // Since the first word could have multiple parsings, the root node
         // has to be a null placeholder node instead
-        _root = new WordNode(null, null,null);
-        _wordsWithTags = wordsWithTags;
+        _root = new WordNode(null, null,null,1);
+        _wordsToTagFreqs = wordsToTagFreqs;
         _legalNextTags = legalNextTags;
     }
 
@@ -104,22 +113,24 @@ public class ParseTree {
             // skip the first node, the null _root node.
             current = iter.next();
             String lastTag = current.getTag();
-            Set<String> validTags;
+            Set<Pair<String, Integer>> validTags;
 
             try {
-                validTags = new TreeSet<>(_wordsWithTags.get(word.rawWord()));
+                validTags = new TreeSet<>(_wordsToTagFreqs.get(word.rawWord()));
             } catch (NullPointerException e) {
-                // Thrown if the word doesn't exist in _wordsWithTags
+                // Thrown if the word doesn't exist in _wordsToTagFreqs
                 throw new IllegalArgumentException("No legal tags left for word "+word.rawWord());
             }
 
             if (lastTag != null) {
                 Set<String> possibleNext = _legalNextTags.get(lastTag);
-                validTags.retainAll(possibleNext); 
+                MapUtil.filterKeys(validTags, (x) -> {
+                    return true;
+                });
                 validTags = _excludeInvalidBoundaries(lastTag, validTags, word.boundary());
             } else {
                 // If it's the first word of the sentence, it better be the start of a clause!
-                validTags.removeIf((tag) -> Word.getBoundary(tag) != Boundary.START);
+                validTags.removeIf((tag) -> Word.getBoundary(tag.first()) != Boundary.START);
             }
             
             if (validTags.size() == 0) {
@@ -132,8 +143,10 @@ public class ParseTree {
             }
 
             String rawWord = word.rawWord();
-            for (String tag : validTags) {
-                current.addChild(rawWord, tag);
+            for (Pair<String,Integer> tagPair : validTags) {
+                String tag = tagPair.first();
+                int frequency = tagPair.second();
+                current.addChild(rawWord, tag, frequency);
             }
         }
     }
@@ -202,15 +215,16 @@ public class ParseTree {
     }
 
     // Goes through the possible tags provided and determines which to consider, given local clause boundaries
-    private static Set<String> _excludeInvalidBoundaries (String lastTag, Set<String> possibilities, 
-                                                        Boundary wordBound) {
-        Set<String> prunedPossibilities = new TreeSet<>(possibilities);
+    private static Set<Pair<String, Integer>> _excludeInvalidBoundaries (String lastTag,
+                                Set<Pair<String, Integer>> possibilities, Boundary wordBound) {
+        Set<Pair<String, Integer>> prunedPossibilities = new TreeSet<>(possibilities);
         Boundary lastBoundary = Word.getBoundary(lastTag);
-        var followingBounds = legalBoundaryContours.get(lastBoundary);
-        for (String tag : possibilities) {
+        var followingBounds = _legalBoundaryContours.get(lastBoundary);
+        for (Pair<String, Integer> tagPair : possibilities) {
+            String tag = tagPair.first();
             Boundary tagBoundary = Word.getBoundary(tag);
             if (tagBoundary != wordBound || !followingBounds.contains(tagBoundary)) {
-                prunedPossibilities.remove(tag);
+                prunedPossibilities.remove(tagPair);
             }
         }
         return prunedPossibilities;

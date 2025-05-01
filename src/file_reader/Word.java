@@ -1,13 +1,17 @@
-package file_reader;
+// A mostly-immutable object that has tracks its word, 
 
+package file_reader;
 import java.io.Serializable;
 
 public class Word implements Comparable<Word>, Serializable {
     public static enum Boundary {START, END, MIDDLE};
-    private String _word;
-    private String _tag;
+    private final String _WORD;
+    private final String _TAG;
+    private int _count;
 
     public Word(String wordWithAnnotation, Boundary clauseBoundary) throws IllegalArgumentException {
+        _count = 1;
+
         if (!wordWithAnnotation.contains("_")) {
             throw new IllegalArgumentException(wordWithAnnotation + " has no annotation");
         }
@@ -15,7 +19,7 @@ public class Word implements Comparable<Word>, Serializable {
         if (arr.length != 2) {
             throw new IllegalArgumentException("failed to split "+wordWithAnnotation);
         }
-        _word = arr[0].toLowerCase();
+        _WORD = arr[0].toLowerCase();
         String fullTag = arr[1];
         // Some tags have extra info after the '-', but it was utterly
         // unhelpful for this application, so I'm removing it here.
@@ -24,39 +28,51 @@ public class Word implements Comparable<Word>, Serializable {
         sb.append(trimmed);
         sb.append(";");
         sb.append(clauseBoundary);
-        _tag = sb.toString();
+        _TAG = sb.toString();
     }
 
     public Word(String word, String tag, Boundary clauseBoundary) {
-        _word = word;
+        _WORD = word;
+        _count = 1;
         StringBuilder sb = new StringBuilder();
         sb.append(getPOS(tag)); // Remove the boundary from it if present
         sb.append(";");
         sb.append(clauseBoundary);
-        _tag = sb.toString();
+        _TAG = sb.toString();
     }
 
     public Word(String word, String tagWithBoundary) {
-        _word = word;
-        _tag = tagWithBoundary;
+        _WORD = word;
+        _TAG = tagWithBoundary;
+        _count = 1;
     }
 
     public String getWord() {
-        return _word;
+        return _WORD;
     }
     public String getTag() {
-        return _tag;
+        return _TAG;
     }
     public Boundary getBoundary() {
-        return getBoundary(_tag);
+        return getBoundary(_TAG);
     }
     public String getPOS() {
-        return getPOS(_tag);
+        return getPOS(_TAG);
+    }
+    public int getCount() {
+        return _count;
+    }
+
+    public void incrementCount() {
+        _count++;
+    }
+    public void decrementCount() {
+        _count--;
     }
 
     @Override
     public String toString() {
-        return _word + " - " + _tag;
+        return _WORD + " - " + _TAG;
     }
 
     @Override
@@ -65,8 +81,8 @@ public class Word implements Comparable<Word>, Serializable {
             return true;
         } else if (other instanceof Word) {
             Word otherWord = (Word) other;
-            if (_word.equalsIgnoreCase(otherWord._word) &&
-            _tag.equalsIgnoreCase(otherWord._tag)) {
+            if (_WORD.equalsIgnoreCase(otherWord._WORD) &&
+            _TAG.equalsIgnoreCase(otherWord._TAG)) {
                 return true;
             }    
         }
@@ -78,10 +94,10 @@ public class Word implements Comparable<Word>, Serializable {
         if (other.equals(this)) {
             return 0;
         }
-        if (!other._word.equals(_word)) {
-            return other._word.compareTo(_word);
+        if (!other._WORD.equals(_WORD)) {
+            return other._WORD.compareTo(_WORD);
         }
-        return other._tag.compareTo(_tag);
+        return other._TAG.compareTo(_TAG);
     }
 
     // Returns the "word boundary" chunk of the tag
