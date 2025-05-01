@@ -1,35 +1,32 @@
-AB
-AP
-AT
-BE
-CC
-CD
-CS
-DO
-DT
-EX
-FW
-HL
-HV
-IN
-JJ
-MD
-NC
-NN
-NP
-NR
-OD
-PN
-PP
-QL
-RB
-RN
-RP
-TL
-TO
-UH
-VB
-WD
-WP
-WQ
-WR
+AB//Pre-Quantifier
+AP//Post-Determiner
+AT//Article
+BE//Copula
+CC//Coordinating Conjunction
+CD//Cardinal Numeral
+CS//Subordinating Conjunction
+DO//"do"
+DT//Determiner
+EX//Existential "there"
+FW//Foreign Word
+HV//"have"
+IN//Preposition
+JJ//Adjective
+MD//Modal Auxiliary
+NN//Noun
+NP//Proper Noun
+NR//Adverbial Noun
+OD//Ordinal Numeral
+PN//Nominal Pronoun
+PP//Possessive pronoun
+QL//Qualifier
+RB//Adverb
+RN//Nominal Adverb
+RP//Adverbial Particle
+TO//Infinitive "to"
+UH//Interjection or Exclamation
+VB//Verb
+WD//WH-Determiner
+WP//WH-Pronoun
+WQ//WH-Qualifier
+WR//WH-Adverb

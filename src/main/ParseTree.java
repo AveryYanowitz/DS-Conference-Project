@@ -3,33 +3,34 @@ package main;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 
-import file_reader.Pair;
-import file_reader.Word;
-import file_reader.Word.Boundary;
+import file_processing.Pair;
+import file_processing.Word;
+import file_processing.Word.Boundary;
 import main.Tagger.WordAndBound;
 
-public class ParseTree {
-
+public class ParseTree implements Iterable<Pair<String, Double>> {
+    
     private class WordNode {
         Word word;
         WordNode parent;
+        
         List<WordNode> children;
         double probability;
 
-        WordNode(String rawWord, String thisTag, WordNode parent, int frequency) {
+        WordNode(String rawWord, String thisTag, WordNode parent, double prob) {
             children = new ArrayList<>();
             word = new Word(rawWord, thisTag);
             this.parent = parent;
             if (parent == null) {
-                probability = 1;
+                probability = prob;
             } else {
-                probability = parent.probability * (frequency / TOTAL_WORDS);
+                probability = parent.probability * prob;
             }
         }
 
@@ -53,24 +54,19 @@ public class ParseTree {
             return children.size();
         }
 
-        void addChild(String rawWord, String tag, int frequency) {
-            children.add(new WordNode(rawWord, tag, this, frequency));
-        }     
+        void addChild(String rawWord, String tag, double probability) {
+            children.add(new WordNode(rawWord, tag, this, probability));
+        }
     } 
-
+    
     private WordNode _root;
-    private Map<String, Set<Pair<String, Integer>>> _wordsToTagFreqs;
-    private Map<String, Set<String>> _legalNextTags;
-    private static Map<Boundary,List<Boundary>> _legalBoundaryContours = MapUtil.getLegalBoundaryContours();
-    private static int TOTAL_WORDS = 1003581; // see unused method _totalWords in CorpusProcessor
+    private TagAtlas _tagAtlas;
 
-    ParseTree(Map<String, Set<Pair<String,Integer>>> wordsToTagFreqs,
-              Map<String, Set<String>> legalNextTags) {
+    ParseTree(TagAtlas tagAtlas) throws ParseException {
         // Since the first word could have multiple parsings, the root node
         // has to be a null placeholder node instead
         _root = new WordNode(null, null,null,1);
-        _wordsToTagFreqs = wordsToTagFreqs;
-        _legalNextTags = legalNextTags;
+        _tagAtlas = tagAtlas;
     }
 
     // Iterates over the tree, only returns leaf nodes
@@ -104,6 +100,36 @@ public class ParseTree {
         }
     }
     
+    // Iterates over the sentences in the tree, returns pairs that link
+    // sentences to their total probability, calculated as the product of
+    // each word-tag combo's probability
+    public class SentenceIter implements Iterator<Pair<String, Double>> {
+        private PriorityQueue<Pair<String, Double>> sentences;
+
+        SentenceIter() {
+            sentences = new PriorityQueue<>((x, y) -> y.second().compareTo(x.second()));
+            sentences.addAll(getSentences());
+        }
+
+        @Override
+        public boolean hasNext() {
+            return sentences.size() > 0;
+        }
+
+        @Override
+        public Pair<String, Double> next() {
+            Pair<String, Double> rawPair = sentences.poll();
+            // No real significance to 15, other than that it made the numbers the prettiest
+            double normalizedFreq = _nthRoot(rawPair.second(), 30);
+            return rawPair.replaceSecond(normalizedFreq);
+        }
+
+        private double _nthRoot(double base, int n) {
+            return Math.pow(base, 1.0/n);
+        }
+
+    }
+
     // Adds the word to each current leaf node.
     public void add(WordAndBound word) throws IllegalArgumentException {
         LeafIter iter = new LeafIter();
@@ -113,21 +139,21 @@ public class ParseTree {
             // skip the first node, the null _root node.
             current = iter.next();
             String lastTag = current.getTag();
-            Set<Pair<String, Integer>> validTags;
+            Set<Pair<String, Double>> validTags;
 
             try {
-                validTags = new TreeSet<>(_wordsToTagFreqs.get(word.rawWord()));
-            } catch (NullPointerException e) {
-                // Thrown if the word doesn't exist in _wordsToTagFreqs
-                throw new IllegalArgumentException("No legal tags left for word "+word.rawWord());
+                validTags = new TreeSet<>(_tagAtlas.getTagAndProb(word.rawWord()));
+            } catch (NullPointerException e) { // word not in _wordsToTagProbs
+                throw new IllegalArgumentException("No legal tags left for word '"+word.rawWord()+"'");
             }
 
             if (lastTag != null) {
-                Set<String> possibleNext = _legalNextTags.get(lastTag);
-                MapUtil.filterKeys(validTags, (x) -> {
-                    return true;
-                });
-                validTags = _excludeInvalidBoundaries(lastTag, validTags, word.boundary());
+                Set<String> possibleNext = _tagAtlas.getNextTags(lastTag);
+                validTags.removeIf((Pair<String, Double> pair) -> {
+                    String tag = pair.first();
+                    return !possibleNext.contains(tag);
+                }); 
+                validTags = _excludeInvalidBoundaries(lastTag, word.boundary(), validTags);
             } else {
                 // If it's the first word of the sentence, it better be the start of a clause!
                 validTags.removeIf((tag) -> Word.getBoundary(tag.first()) != Boundary.START);
@@ -143,10 +169,10 @@ public class ParseTree {
             }
 
             String rawWord = word.rawWord();
-            for (Pair<String,Integer> tagPair : validTags) {
+            for (Pair<String,Double> tagPair : validTags) {
                 String tag = tagPair.first();
-                int frequency = tagPair.second();
-                current.addChild(rawWord, tag, frequency);
+                double probability = tagPair.second();
+                current.addChild(rawWord, tag, probability);
             }
         }
     }
@@ -161,28 +187,29 @@ public class ParseTree {
         }
     }
 
-    public Set<String> getSentences() {
+    public Set<Pair<String, Double>> getSentences() {
         LeafIter iter = new LeafIter();
-        Set<String> allSentences = new TreeSet<>();
+        Set<Pair<String, Double>> allSentences = new TreeSet<>();
         while (iter.hasNext()) {
             WordNode word = iter.next();
+            double probability = word.probability;
             StringBuilder sb = new StringBuilder();
             while (word.parent != null) {
                 sb.insert(0, " ");
                 sb.insert(0, word.getTag());
                 word = word.parent;
             }
-            allSentences.add(sb.toString());
+            allSentences.add(new Pair<>(sb.toString(), probability));
         }
         return allSentences;
     }
 
     @Override
     public String toString() {
-        Set<String> sentences = getSentences();
+        Set<Pair<String, Double>> sentences = getSentences();
         StringBuilder sb = new StringBuilder();
-        for (String sentence : sentences) {
-            sb.append(sentence);
+        for (Pair<String, Double> sentence : sentences) {
+            sb.append(sentence.first());
             sb.append("\n");
         }
         sb.append(_getWords());
@@ -215,12 +242,12 @@ public class ParseTree {
     }
 
     // Goes through the possible tags provided and determines which to consider, given local clause boundaries
-    private static Set<Pair<String, Integer>> _excludeInvalidBoundaries (String lastTag,
-                                Set<Pair<String, Integer>> possibilities, Boundary wordBound) {
-        Set<Pair<String, Integer>> prunedPossibilities = new TreeSet<>(possibilities);
+    private Set<Pair<String, Double>> _excludeInvalidBoundaries (String lastTag, Boundary wordBound,
+                                                            Set<Pair<String, Double>> possibilities) {
+        Set<Pair<String, Double>> prunedPossibilities = new TreeSet<>(possibilities);
         Boundary lastBoundary = Word.getBoundary(lastTag);
-        var followingBounds = _legalBoundaryContours.get(lastBoundary);
-        for (Pair<String, Integer> tagPair : possibilities) {
+        var followingBounds = _tagAtlas.getNextBoundaries(lastBoundary);
+        for (Pair<String, Double> tagPair : possibilities) {
             String tag = tagPair.first();
             Boundary tagBoundary = Word.getBoundary(tag);
             if (tagBoundary != wordBound || !followingBounds.contains(tagBoundary)) {
@@ -228,6 +255,11 @@ public class ParseTree {
             }
         }
         return prunedPossibilities;
+    }
+
+    @Override
+    public Iterator<Pair<String, Double>> iterator() {
+        return new SentenceIter();
     }
 
 }

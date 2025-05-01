@@ -1,4 +1,4 @@
-package file_reader;
+package file_processing;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import file_reader.Word.Boundary;
-import main.MapUtil;
+import file_processing.Word.Boundary;
+import main.TagAtlas;
 
 public class CorpusProcessor {
     // To save the data, we need a serializable wrapper around the Comparator class
@@ -25,10 +25,10 @@ public class CorpusProcessor {
 
     private static SerializableComparator<String> _stringCompare = new SerializableComparator<>();
     
-    public static Pair<Map<String, Set<Pair<String, Integer>>>, Map<String, Set<String>>> getWordMaps(String filename) {
-        Map<String, Set<Pair<String, Integer>>> wordsToTagFreqs = new TreeMap<>(_stringCompare);
+    public static Pair<Map<String, Set<Pair<String, Double>>>, Map<String, Set<String>>> getWordMaps(String filename) {
+        Map<String, Set<Pair<String, Integer>>> wordsAndRawFreqs = new TreeMap<>(_stringCompare);
         Map<String, Set<String>> legalNextTags = new TreeMap<>(_stringCompare);
-        Map<Boundary, List<Boundary>> legalBoundaryContours = MapUtil.getLegalBoundaryContours();
+        Map<Boundary, List<Boundary>> legalBoundaryContours = TagAtlas.getBoundaryContours();
 
         try {
             Scanner scanner = new Scanner(new File ("assets",filename));
@@ -51,8 +51,8 @@ public class CorpusProcessor {
                             continue;
                         }
                         // the last word was actually an instance of Boundary.END, so
-                        // we have to decrement its count in wordsToTagFreqs accordingly
-                        Set<Pair<String, Integer>> tags = wordsToTagFreqs.get(lastWord.getWord());
+                        // we have to decrement its count in wordsAndRawFreqs accordingly
+                        Set<Pair<String, Integer>> tags = wordsAndRawFreqs.get(lastWord.getWord());
                         Pair<String, Integer> tagToRemove = null;
                         for (var tag : tags) {
                             if (tag.first().equals(lastTag)) {
@@ -68,17 +68,19 @@ public class CorpusProcessor {
                         }
 
                         // Then we want to add it again, but with the END boundary
-                        thisWord = new Word(lastWord.getWord(), lastWord.getTag(), Word.Boundary.END);
+                        thisWord = new Word(lastWord.getWord(), 
+                        lastWord.getTag(), Word.Boundary.END);
                     } else {
-                        thisWord = atClauseStart ? new Word(fullWordString, Word.Boundary.START)
-                                                : new Word(fullWordString, Word.Boundary.MIDDLE);
+                        thisWord = atClauseStart 
+                                ? new Word(fullWordString, Word.Boundary.START)
+                                : new Word(fullWordString, Word.Boundary.MIDDLE);
                         atClauseStart = false;
                     }
 
                     Pair<String, Integer> pair = new Pair<>(thisWord.getTag(), 1);
                     Set<Pair<String, Integer>> set = new TreeSet<>();
                     set.add(pair);
-                    wordsToTagFreqs.merge(thisWord.getWord(), set, (existingSet, newSet) -> {
+                    wordsAndRawFreqs.merge(thisWord.getWord(), set, (existingSet, newSet) -> {
                         // Look to see if this tag already exists
                         Pair<String, Integer> sameTag = null;
                         for (var tagPair : existingSet) {
@@ -131,21 +133,25 @@ public class CorpusProcessor {
             throw new RuntimeException("problem reading file: "+filename);
         }
         
-        // System.out.println(_totalWords(wordsToTagFreqs));
-
-        return new Pair<>(wordsToTagFreqs, legalNextTags);
+        var wordsToTagProbs = _normalize(wordsAndRawFreqs);
+        return new Pair<>(wordsToTagProbs, legalNextTags);
     }
 
-    @SuppressWarnings("unused")
-    // See commented-out line above; leaving this in here for transparency of how I got ParseTree.TOTAL_WORDS
-    private static int _totalWords(Map<String, Set<Pair<String, Integer>>> wordsToTagFreqs) {
-        int total = 0;
-        for (var tagSet : wordsToTagFreqs.values()) {
-            for (Pair<String,Integer> pair : tagSet) {
+    private static <K, V> Map<K, Set<Pair<V, Double>>> _normalize(Map<K, Set<Pair<V, Integer>>> map) {
+        Map<K, Set<Pair<V, Double>>> normedMap = new TreeMap<>();
+        for (var entry : map.entrySet()) {
+            double total = 0;
+            Set<Pair<V,Integer>> valPairs = entry.getValue();
+            for (Pair<V,Integer> pair : valPairs) {
                 total += pair.second();
             }
+            Set<Pair<V,Double>> newValPairs = new TreeSet<>();
+            for (Pair<V, Integer> pair : valPairs) {
+                double adjusted_freq = pair.second() / total;
+                newValPairs.add(new Pair<V,Double>(pair.first(), adjusted_freq));
+            }
+            normedMap.put(entry.getKey(), newValPairs);
         }
-        return total;
+        return normedMap;
     }
-
 }

@@ -1,6 +1,6 @@
 // A mostly-immutable object that has tracks its word, 
 
-package file_reader;
+package file_processing;
 import java.io.Serializable;
 
 public class Word implements Comparable<Word>, Serializable {

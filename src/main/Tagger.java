@@ -2,17 +2,14 @@ package main;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Scanner;
 
-import file_reader.Word.Boundary;
-import file_reader.Pair;
-import file_reader.Serializer;
+import file_processing.Pair;
+import file_processing.Word.Boundary;
+
+import java.util.Scanner;
 
 public class Tagger {
     record WordAndBound (String rawWord, Boundary boundary) { 
@@ -23,55 +20,47 @@ public class Tagger {
     }
     @SuppressWarnings("resource")
     public static void main(String[] args) {
-        Pair<Map<String, Set<Pair<String, Integer>>>,
-            Map<String, Set<String>>> freqTags;
-        List<String> tagsToKeep;
-        try {
-            tagsToKeep = _getTags("./assets/all_tags.txt");
-            freqTags = Serializer.importObject(new File("./assets/maps.ser"));
-        } catch (IOException io) {
-            io.printStackTrace();
-            return;
-        } catch (ClassNotFoundException cnf) {
-            cnf.printStackTrace();
-            return;
-        }
-
-        var wordsToTagFreqs = freqTags.first();
-        MapUtil.filterValues(wordsToTagFreqs, (var tagPair) -> {
-            String fullTag = tagPair.first();
-            String shortTag = fullTag.substring(0,2);
-            return !tagsToKeep.contains(shortTag);
-        });
-
-        Map<String, Set<String>> legalNextTags = freqTags.second();
-        MapUtil.filterKeys(legalNextTags, tagsToKeep);
-        MapUtil.filterValues(legalNextTags, (var nextTag) -> {
-            String shortTag = nextTag.substring(0, 2);
-            return !tagsToKeep.contains(shortTag);
-        });
-
         if (StringUtil.getYN("Parse custom sentences?")) {
             do {
                 // Get a sentence from a user, take the words, and turn them into WordAndBound records
                 String sentence = StringUtil.getString("Enter a sentence to tag: ");
-                _parse(sentence, wordsToTagFreqs, legalNextTags);
+                _parse(sentence);
             } while (StringUtil.getYN("Add another sentence?"));
             System.out.println("Thanks for stopping by!");
         } else {
             Scanner fileScanner;
-
             try {
                 fileScanner = new Scanner(new File("./assets/test_sentences.txt"));
             } catch (FileNotFoundException e) {
-                System.out.println("ERROR: File not found.");
+                System.out.println("ERROR: File containing test sentences not found.");
                 return;
             }
 
+            double minProb = StringUtil.getDouble("Input minimum probability for sentences to be included.", 0, 1);
+            int numToPrint = StringUtil.getInt("Max number to print?");
             while (fileScanner.hasNext()) {
                 String sentence = fileScanner.nextLine();
                 System.out.println("Parsing: '"+sentence+"'");
-                _parse(sentence, wordsToTagFreqs, legalNextTags);
+                ParseTree allParses = _parse(sentence);
+                if (allParses != null) {
+                    boolean printed = false;
+                    int numPrinted = 0;
+                    for (Pair<String, Double> parse : allParses) {
+                        if (parse.second() > minProb && numPrinted < numToPrint) {
+                            if (!printed) {
+                                printed = true;
+                                System.out.println("Sentences in order of probability:");
+                            }
+                            System.out.println(StringUtil.formatParse(parse));
+                            numPrinted++;
+                        } else {
+                            break;
+                        }
+                    }
+                    if (!printed) {
+                        System.out.println("No sufficiently probable sentences found.");
+                    }
+                }
                 StringUtil.getString("Press 'Enter' to continue");
                 System.out.println();
             }
@@ -80,19 +69,26 @@ public class Tagger {
         
     }
 
-    private static ParseTree _parse(String sentence, Map<String, Set<Pair<String, Integer>>> wordsToTagFreqs, Map<String, Set<String>> legalNextTags) {
+    private static ParseTree _parse(String sentence, TagAtlas tagAtlas) {
         String[] rawWords = sentence.split(" ");
         List<WordAndBound> wordList = _addClauseContours(rawWords);
         
         // Take each word in wordList in order and use it to update the ParseTree
-        ParseTree allParses = new ParseTree(wordsToTagFreqs, legalNextTags);
+        ParseTree allParses;
+        try {
+            allParses = new ParseTree(tagAtlas);
+        } catch (ParseException p) {
+            System.out.println(p.getMessage());
+            return null;
+        }
+
         boolean successful = true;
         for (WordAndBound word : wordList) {
             try {
                 allParses.add(word);
             } catch (IllegalArgumentException error) {                
                 System.out.println("Unable to parse sentence '" + sentence+"'");
-                System.out.println(error.getMessage());
+                System.out.println(" "+error.getMessage());
                 successful = false;
                 break;
             }
@@ -100,11 +96,11 @@ public class Tagger {
                 allParses.makeLeafNodesEnd();
             }
         }
-        if (successful) {                
-            System.out.println(allParses.toString());
+        if (successful) {
+            return allParses;
+        } else {
+            return null;
         }
-        System.out.println();
-        return allParses;
     }
 
     private static List<WordAndBound> _addClauseContours(String[] rawWords) {        
@@ -130,20 +126,6 @@ public class Tagger {
         WordAndBound lastWord = wordList.removeLast();
         wordList.add(new WordAndBound(lastWord.rawWord(), Boundary.END));
         return wordList;
-    }
-
-    private static List<String> _getTags(String pathname) throws FileNotFoundException {
-        String[] tagOptions = new String[35];
-        Scanner scanner = new Scanner(new File(pathname));
-        int index = 0;
-        while (scanner.hasNextLine()) {
-            tagOptions[index] = scanner.nextLine();
-            index++;
-        }
-        scanner.close();
-        
-        List<String> tagsToKeep = StringUtil.getList("Which tags do you want to include?", tagOptions);
-        return tagsToKeep;
     }
 
 }

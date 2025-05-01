@@ -1,9 +1,12 @@
 package main;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
+import java.util.InputMismatchException;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.TreeSet;
+
+import file_processing.Pair;
 
 public class StringUtil {
 
@@ -15,21 +18,20 @@ public class StringUtil {
     }
 
     @SuppressWarnings("resource")
-    public static List<String> getList(String prompt, String[] possibilities) {
-        List<String> answerKey = Arrays.asList(possibilities);
-        List<String> filteredAnswers = new ArrayList<>();
+    public static Set<String> getSet(String prompt, Collection<String> possibilities) {
+        Set<String> filteredAnswers = new TreeSet<>();
         do {
             Scanner reader = new Scanner(System.in);
             System.out.println(prompt);
-            System.out.println("Valid answers: "+answerKey);
+            System.out.println("Valid answers: "+possibilities);
             System.out.print("Enter as comma-separated list or type 'ALL': ");
             String[] answers = reader.nextLine().split(", ");
             if (answers[0].toLowerCase().equals("all")) {
-                return answerKey;
+                return null;
             }
 
             for (String answer : answers) {
-                if (answerKey.contains(answer)) {
+                if (possibilities.contains(answer)) {
                     filteredAnswers.add(answer);
                 }
             }
@@ -53,6 +55,49 @@ public class StringUtil {
         }
     }
 
+    @SuppressWarnings("resource")
+    public static double getDouble(String prompt, int lowerBound, int upperBound) {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.print(prompt+" (Enter a number between "+lowerBound+" and "+upperBound+") ");
+            double input;
+            try {
+                input = scanner.nextDouble();
+            } catch (InputMismatchException e) {
+                System.out.println("That's not a number!");
+                continue;
+            }
+            if (input >= lowerBound && input <= upperBound) {
+                return input;
+            }
+            System.out.println("Didn't understand, please try again.");
+        }
+    }
+
+    @SuppressWarnings("resource")
+    public static int getInt(String prompt, int lowerBound, int upperBound) {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.print(prompt+" (Enter an integer between "+lowerBound+" and "+upperBound+") ");
+            int input;
+            try {
+                input = scanner.nextInt();
+            } catch (InputMismatchException e) {
+                System.out.println("That's not an integer!");
+                continue;
+            }
+            if (input >= lowerBound && input <= upperBound) {
+                return input;
+            }
+            System.out.println("Didn't understand, please try again.");
+        }
+    }
+
+    // Only returns positive integers
+    public static int getInt(String prompt) {
+        return getInt(prompt, 0, Integer.MAX_VALUE);
+    }
+
     public static String stripNonAlpha(String oldString) {
         StringBuilder sb = new StringBuilder();
         for (char ch : oldString.toCharArray()) {
@@ -70,6 +115,23 @@ public class StringUtil {
             }
         }
         return false;
+    }
+
+    public static String formatParse(Pair<String, Double> parseAndProb) {
+        StringBuilder sb = new StringBuilder();
+        String[] tags = parseAndProb.first().split(" ");
+        for (String tag : tags) {
+            sb.append(tag);
+            sb.append(" ");
+        }
+        sb.append("\n Probability: ");
+        sb.append(parseAndProb.second());
+        sb.append("\n");
+        return sb.toString();
+    }
+
+    public static String formatVerboseParse(Pair<String, Integer> parseAndProb) {
+        return "";
     }
 
     // I don't know what to name this

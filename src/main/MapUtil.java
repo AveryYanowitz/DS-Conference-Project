@@ -1,16 +1,10 @@
 package main;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
-
-import file_reader.Word.Boundary;
-
-import java.util.TreeMap;
 
 public class MapUtil {
 
@@ -26,7 +20,7 @@ public class MapUtil {
             index_change = 1;
         }
 
-        final int MAX_LENGTH = 100;
+        final int MAX_LENGTH = 1000;
         for (int i = 0; i < numToPrint; i++) {
             Map.Entry<K,V> entry = wordList.get(index);
             
@@ -63,37 +57,21 @@ public class MapUtil {
         });
     }
 
-    // Returns a map showing which boundaries follow each other
-    public static Map<Boundary, List<Boundary>> getLegalBoundaryContours() {
-        Map<Boundary, List<Boundary>> legalBoundaryContours = new TreeMap<>();
-        final Boundary[] start = {Boundary.START};
-        final Boundary[] nonStart = {Boundary.MIDDLE, Boundary.END};
-        legalBoundaryContours.put(Boundary.START, Arrays.asList(nonStart));
-        legalBoundaryContours.put(Boundary.MIDDLE, Arrays.asList(nonStart));
-        legalBoundaryContours.put(Boundary.END, Arrays.asList(start));
-        return legalBoundaryContours;
-    }
-
     // Removes all keys not found in toKeep list
-    public static <V> void filterKeys(Map<String, V> mapToFilter, List<String> toKeep) {
-        Set<Map.Entry<String, V>> mapEntries = mapToFilter.entrySet();
-        Set<String> filterSet = new TreeSet<>(toKeep); // TreeSet because lots of searching
+    public static <K, V> void filterKeys(Map<K, V> mapToFilter, Predicate<Map.Entry<K, V>> removeIfTrue) {
+        var mapEntries = mapToFilter.entrySet();
         mapEntries.removeIf((var entry) -> {
-            // toKeep only contains the first two characters of each tag, because
-            // those indicate the broad "tag" categories. It would be too annoying
-            // for the user to have to type out ALL of the tags they want to include.
-            String shortKey = entry.getKey().substring(0,2);
-            return !filterSet.contains(shortKey);
+            return removeIfTrue.test(entry);
         });
     }
 
     // Removes all elements not found in toKeep from each set
-    public static <K, V> void filterValues(Map<K, Set<V>> mapToFilter, Predicate<V> filterFunc) {
+    public static <K, V> void filterValues(Map<K, Set<V>> mapToFilter, Predicate<V> removeIfTrue) {
         var mapEntries = mapToFilter.entrySet();
         for (var entry : mapEntries) {
             Set<V> value = entry.getValue();
-            value.removeIf((var tagPair) -> {
-                return filterFunc.test(tagPair);
+            value.removeIf((var valueMember) -> {
+                return removeIfTrue.test(valueMember);
             });
         }
 
