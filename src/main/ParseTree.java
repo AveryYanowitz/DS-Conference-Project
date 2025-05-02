@@ -119,8 +119,9 @@ public class ParseTree implements Iterable<Pair<String, Double>> {
         @Override
         public Pair<String, Double> next() {
             Pair<String, Double> rawPair = sentences.poll();
-            // No real significance to 15, other than that it made the numbers the prettiest
-            double normalizedFreq = _nthRoot(rawPair.second(), 30);
+            String[] words = rawPair.first().split(" ");
+            // No real significance to 20, other than that it made the numbers the prettiest
+            double normalizedFreq = _nthRoot(rawPair.second(), 2*words.length);
             return rawPair.replaceSecond(normalizedFreq);
         }
 
@@ -217,12 +218,10 @@ public class ParseTree implements Iterable<Pair<String, Double>> {
         return sb.toString();
     }
 
-    // Does not work correctly.
     private void _prune(WordNode evilParent, WordNode problemChild) {
-        // We only want to remove the unique sentence containing this leaf,
-        // so we traverse upwards until we find where that unique branch ends;
-        // i.e. where the parent has more than one child, or where its parent
-        // is the placeholder node _root
+        // We only want to remove the unique sentence containing this leaf, so we traverse upwards
+        // until we find where that unique branch ends; i.e. where the parent has more than one child,
+        // or where its parent is the placeholder node _root
         if (evilParent.numChildren() > 1 || evilParent.parent == _root) {
             evilParent.children.remove(problemChild);
         } else {

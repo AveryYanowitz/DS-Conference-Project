@@ -23,7 +23,7 @@ public class TagAtlas {
             _verboseTags = !(StringUtil.getYN("Use abbreviated tags?"));
             _wordsToTagProbs = ReaderWriter.importObject(new File("./assets/wordsToTagProbs.ser"));
             _legalNextTags = ReaderWriter.importObject(new File("./assets/legalNextTags.ser"));
-            _tagAbbreviationKey = ReaderWriter.getAbbreviationKey("./assets/all_tags.txt", _verboseTags);
+            _tagAbbreviationKey = ReaderWriter.importObject(new File("./assets/abbreviationKey.ser"));
             _boundaryContours = getBoundaryContours();
         } catch (Exception e) {
             e.printStackTrace();
@@ -75,9 +75,21 @@ public class TagAtlas {
         return boundaryContours;
     }
 
-    // _tagAbbreviationKey only includes tags that the user specified,
-    // so we have to remove the others from the tag-related maps
     private void _removeUnusedTags() {
+        if (_verboseTags) {
+            Set<String> tagsToKeep = StringUtil.getSet("Which tags to remove?", _tagAbbreviationKey.values());
+            if (tagsToKeep != null) {
+                var entrySet = _tagAbbreviationKey.entrySet();
+                entrySet.removeIf((entry) -> !tagsToKeep.contains(entry.getValue()));
+            }
+        } else {
+            Set<String> tagsToKeep = StringUtil.getSet("Which tags to remove?", _tagAbbreviationKey.keySet());   
+            if (tagsToKeep != null) {
+                var entrySet = _tagAbbreviationKey.entrySet();
+                entrySet.removeIf((entry) -> !tagsToKeep.contains(entry.getKey()));
+            }
+        }
+
         MapUtil.filterValues(_wordsToTagProbs, (var tagPair) -> {
             String shortTag = tagPair.first().substring(0,2);
             return !_tagAbbreviationKey.containsKey(shortTag);

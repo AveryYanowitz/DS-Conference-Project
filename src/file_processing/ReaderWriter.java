@@ -8,10 +8,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.TreeMap;
-
-import main.StringUtil;
 
 import java.io.IOException;
 
@@ -33,8 +30,10 @@ public class ReaderWriter {
 
     public static void main(String args[]) {
         var twoMaps = CorpusProcessor.getWordMaps("brown_tag.txt");
+        Map<String, String> abbreviationKey = getAbbreviationKey("./assets/all_tags.txt");
         exportObject(twoMaps.first(), new File("./assets/wordsToTagProbs.ser"));
         exportObject(twoMaps.second(), new File("./assets/legalNextTags.ser"));
+        exportObject(abbreviationKey, new File("./assets/abbreviationKey.ser"));
     }
 
     @SuppressWarnings("unchecked")
@@ -48,35 +47,21 @@ public class ReaderWriter {
         return importedObj;
     }
 
-    public static Map<String, String> getAbbreviationKey(String pathname, boolean verboseTags) throws FileNotFoundException {
-        Map<String, String> shortToLongTags = new TreeMap<>();
-        Scanner scanner = new Scanner(new File(pathname));
+    public static Map<String, String> getAbbreviationKey(String pathname) {
+        Map<String, String> tagAbbreviationKey = new TreeMap<>();
+        Scanner scanner;
+        try {
+            scanner = new Scanner(new File(pathname));
+        } catch (FileNotFoundException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
+
         while (scanner.hasNextLine()) {
             String[] line = scanner.nextLine().split("//");
-            shortToLongTags.put(line[0], line[1]);
+            tagAbbreviationKey.put(line[0], line[1]);
         }
         scanner.close();
-        if (verboseTags) {
-            Set<String> tagsToKeep = StringUtil.getSet("Which tags to remove?", shortToLongTags.values());
-            if (tagsToKeep == null) {
-                return shortToLongTags;
-            }
-
-            var entrySet = shortToLongTags.entrySet();
-            entrySet.removeIf((entry) -> !tagsToKeep.contains(entry.getValue()));
-            return shortToLongTags;
-        } else {
-            Set<String> tagsToKeep = StringUtil.getSet("Which tags to remove?", shortToLongTags.keySet());   
-            if (tagsToKeep == null) {
-                return shortToLongTags;
-            }
-
-            var entrySet = shortToLongTags.entrySet();
-            entrySet.removeIf((entry) -> !tagsToKeep.contains(entry.getKey()));
-            return shortToLongTags;
-        }
+        return tagAbbreviationKey;
     }
-
-
 }
 
