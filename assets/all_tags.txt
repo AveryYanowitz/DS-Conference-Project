@@ -18,7 +18,7 @@ NP//Proper Noun
 NR//Adverbial Noun
 OD//Ordinal Numeral
 PN//Nominal Pronoun
-PP//Possessive pronoun
+PP//Possessive Pronoun
 QL//Qualifier
 RB//Adverb
 RN//Nominal Adverb

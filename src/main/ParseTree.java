@@ -144,6 +144,7 @@ public class ParseTree implements Iterable<Pair<String, Double>> {
             try {
                 validTags = new TreeSet<>(_tagAtlas.getTagAndProb(word.rawWord()));
             } catch (NullPointerException e) { // word not in _wordsToTagProbs
+
                 throw new IllegalArgumentException("No legal tags left for word '"+word.rawWord()+"'");
             }
 

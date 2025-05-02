@@ -57,40 +57,35 @@ public class StringUtil {
 
     @SuppressWarnings("resource")
     public static double getDouble(String prompt, int lowerBound, int upperBound) {
-        Scanner scanner = new Scanner(System.in);
-        while (true) {
+        double input = lowerBound - 0.5;
+        while (input < lowerBound || input > upperBound) {
+            Scanner scanner = new Scanner(System.in);
             System.out.print(prompt+" (Enter a number between "+lowerBound+" and "+upperBound+") ");
-            double input;
             try {
                 input = scanner.nextDouble();
             } catch (InputMismatchException e) {
                 System.out.println("That's not a number!");
                 continue;
             }
-            if (input >= lowerBound && input <= upperBound) {
-                return input;
-            }
-            System.out.println("Didn't understand, please try again.");
         }
+        return input;
     }
 
     @SuppressWarnings("resource")
     public static int getInt(String prompt, int lowerBound, int upperBound) {
-        Scanner scanner = new Scanner(System.in);
-        while (true) {
-            System.out.print(prompt+" (Enter an integer between "+lowerBound+" and "+upperBound+") ");
-            int input;
+        int input = lowerBound - 1;
+        while (input < lowerBound || input > upperBound) {
+            Scanner scanner = new Scanner(System.in);
+            System.out.print(prompt+" (Enter a whole number between "+lowerBound+" and "+upperBound+") ");
             try {
                 input = scanner.nextInt();
             } catch (InputMismatchException e) {
                 System.out.println("That's not an integer!");
                 continue;
             }
-            if (input >= lowerBound && input <= upperBound) {
-                return input;
-            }
-            System.out.println("Didn't understand, please try again.");
         }
+        return input;
+
     }
 
     // Only returns positive integers
@@ -117,12 +112,19 @@ public class StringUtil {
         return false;
     }
 
-    public static String formatParse(Pair<String, Double> parseAndProb) {
+    public static String formatParse(Pair<String, Double> parseAndProb, TagAtlas tagAtlas) {
         StringBuilder sb = new StringBuilder();
         String[] tags = parseAndProb.first().split(" ");
-        for (String tag : tags) {
-            sb.append(tag);
-            sb.append(" ");
+        if (tagAtlas.isVerbose()) {
+            for (String tag : tags) {
+                sb.append(tagAtlas.getLongForm(tag));
+                sb.append(" ");
+            }
+        } else {
+            for (String tag : tags) {
+                sb.append(tag);
+                sb.append(" ");
+            }
         }
         sb.append("\n Probability: ");
         sb.append(parseAndProb.second());

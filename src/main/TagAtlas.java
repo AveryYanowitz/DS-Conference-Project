@@ -26,6 +26,7 @@ public class TagAtlas {
             _tagAbbreviationKey = ReaderWriter.getAbbreviationKey("./assets/all_tags.txt", _verboseTags);
             _boundaryContours = getBoundaryContours();
         } catch (Exception e) {
+            e.printStackTrace();
             throw new ParseException(e.getMessage());
         }
         _removeUnusedTags();        
@@ -41,6 +42,19 @@ public class TagAtlas {
 
     public Set<String> getNextTags(String tag) {
         return _legalNextTags.get(tag);
+    }
+
+    public String getLongForm(String shortTag) {
+        return _tagAbbreviationKey.get(shortTag.substring(0, 2));
+    }
+
+    public String getShortForm(String longTag) {
+        for (var entry : _tagAbbreviationKey.entrySet()) {
+            if (entry.getValue() == longTag) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     public boolean isVerbose() {
@@ -64,37 +78,20 @@ public class TagAtlas {
     // _tagAbbreviationKey only includes tags that the user specified,
     // so we have to remove the others from the tag-related maps
     private void _removeUnusedTags() {
-        if (_verboseTags) {
-            MapUtil.filterValues(_wordsToTagProbs, (var tagPair) -> {
-                String fullTag = tagPair.first();
-                return !_tagAbbreviationKey.containsValue(fullTag);
-            });
-    
-            MapUtil.filterKeys(_legalNextTags, (var entry) -> {
-                String fullTag = entry.getKey();
-                return !_tagAbbreviationKey.containsValue(fullTag);
-            });
-    
-            MapUtil.filterValues(_legalNextTags, (var nextTag) -> {
-                String fullTag = nextTag;
-                return !_tagAbbreviationKey.containsValue(fullTag);
-            });
-        } else {
-            MapUtil.filterValues(_wordsToTagProbs, (var tagPair) -> {
-                String shortTag = tagPair.first().substring(0,2);
-                return !_tagAbbreviationKey.containsKey(shortTag);
-            });
-    
-            MapUtil.filterKeys(_legalNextTags, (var entry) -> {
-                String shortTag = entry.getKey().substring(0,2);
-                return !_tagAbbreviationKey.containsKey(shortTag);
-            });
-    
-            MapUtil.filterValues(_legalNextTags, (var nextTag) -> {
-                String shortTag = nextTag.substring(0, 2);
-                return !_tagAbbreviationKey.containsKey(shortTag);
-            });
-        }
+        MapUtil.filterValues(_wordsToTagProbs, (var tagPair) -> {
+            String shortTag = tagPair.first().substring(0,2);
+            return !_tagAbbreviationKey.containsKey(shortTag);
+        });
+
+        MapUtil.filterKeys(_legalNextTags, (var entry) -> {
+            String shortTag = entry.getKey().substring(0,2);
+            return !_tagAbbreviationKey.containsKey(shortTag);
+        });
+
+        MapUtil.filterValues(_legalNextTags, (var nextTag) -> {
+            String shortTag = nextTag.substring(0, 2);
+            return !_tagAbbreviationKey.containsKey(shortTag);
+        });
     }
     
 }

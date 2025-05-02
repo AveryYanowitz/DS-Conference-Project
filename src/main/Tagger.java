@@ -20,53 +20,43 @@ public class Tagger {
     }
     @SuppressWarnings("resource")
     public static void main(String[] args) {
+        TagAtlas tagAtlas;
+        try {
+            tagAtlas = new TagAtlas();
+        } catch (ParseException p) {
+            p.printStackTrace();
+            return;
+        }
+
+        double minProb = StringUtil.getDouble("Input minimum probability for sentences to be included.", 0, 1);
+        int numToPrint = StringUtil.getInt("Max number to print?");
         if (StringUtil.getYN("Parse custom sentences?")) {
             do {
                 // Get a sentence from a user, take the words, and turn them into WordAndBound records
                 String sentence = StringUtil.getString("Enter a sentence to tag: ");
-                _parse(sentence);
+                ParseTree allParses = _parse(sentence, tagAtlas);
+                _printTree(allParses, tagAtlas, minProb, numToPrint);
             } while (StringUtil.getYN("Add another sentence?"));
             System.out.println("Thanks for stopping by!");
-        } else {
-            Scanner fileScanner;
-            try {
-                fileScanner = new Scanner(new File("./assets/test_sentences.txt"));
-            } catch (FileNotFoundException e) {
-                System.out.println("ERROR: File containing test sentences not found.");
-                return;
-            }
-
-            double minProb = StringUtil.getDouble("Input minimum probability for sentences to be included.", 0, 1);
-            int numToPrint = StringUtil.getInt("Max number to print?");
-            while (fileScanner.hasNext()) {
-                String sentence = fileScanner.nextLine();
-                System.out.println("Parsing: '"+sentence+"'");
-                ParseTree allParses = _parse(sentence);
-                if (allParses != null) {
-                    boolean printed = false;
-                    int numPrinted = 0;
-                    for (Pair<String, Double> parse : allParses) {
-                        if (parse.second() > minProb && numPrinted < numToPrint) {
-                            if (!printed) {
-                                printed = true;
-                                System.out.println("Sentences in order of probability:");
-                            }
-                            System.out.println(StringUtil.formatParse(parse));
-                            numPrinted++;
-                        } else {
-                            break;
-                        }
-                    }
-                    if (!printed) {
-                        System.out.println("No sufficiently probable sentences found.");
-                    }
-                }
-                StringUtil.getString("Press 'Enter' to continue");
-                System.out.println();
-            }
-            System.out.println("That's all, folks!");
+            return;
         }
-        
+        // else:
+        Scanner fileScanner;
+        try {
+            fileScanner = new Scanner(new File("./assets/test_sentences.txt"));
+        } catch (FileNotFoundException e) {
+            System.out.println("ERROR: File containing test sentences not found.");
+            return;
+        }
+        while (fileScanner.hasNext()) {
+            String sentence = fileScanner.nextLine();
+            System.out.println("Parsing: '"+sentence+"'");
+            ParseTree allParses = _parse(sentence, tagAtlas);
+            _printTree(allParses, tagAtlas, minProb, numToPrint);
+            StringUtil.getString("Press 'Enter' to continue");
+            System.out.println();
+        }
+        System.out.println("That's all, folks!");
     }
 
     private static ParseTree _parse(String sentence, TagAtlas tagAtlas) {
@@ -101,6 +91,29 @@ public class Tagger {
         } else {
             return null;
         }
+    }
+
+    private static void _printTree(ParseTree allParses, TagAtlas tagAtlas, double minProb, int numToPrint) {
+        if (allParses != null) {
+            boolean printed = false;
+            int numPrinted = 0;
+            for (Pair<String, Double> parse : allParses) {
+                if (parse.second() > minProb && numPrinted < numToPrint) {
+                    if (!printed) {
+                        printed = true;
+                        System.out.println("Sentences in order of probability:");
+                    }
+                    System.out.println(StringUtil.formatParse(parse, tagAtlas));
+                    numPrinted++;
+                } else {
+                    break;
+                }
+            }
+            if (!printed) {
+                System.out.println("No sufficiently probable sentences found.");
+            }
+        }
+
     }
 
     private static List<WordAndBound> _addClauseContours(String[] rawWords) {        
